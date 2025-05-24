@@ -16,12 +16,24 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->decimal('base_price', 10, 2);
+            $table->decimal('agent_addon_price', 10, 2);
+            $table->enum('agent_price_type', ['fixed', 'percentage']);
+            $table->datetime('check_in_time');
+            $table->datetime('check_out_time');
+            $table->datetime('booking_start_date');
+            $table->datetime('booking_end_date');
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('is_refundable')->default(true);
+            $table->text('terms_and_conditions')->nullable();
+            $table->text('cancellation_policy')->nullable();
             $table->string('location');
             $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
             $table->enum('visibility', ['public', 'private'])->default('public');
             
             $table->index(['location', 'visibility']);
             $table->index('base_price');
+            $table->index('owner_id');
             $table->timestamps();
         });
     }

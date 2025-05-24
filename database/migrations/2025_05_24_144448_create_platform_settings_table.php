@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('package_activities', function (Blueprint $table) {
+        Schema::create('platform_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('package_id')->constrained()->onDelete('cascade');
-            $table->foreignId('activity_id')->constrained()->onDelete('cascade');
+            $table->enum('admin_addon_type', ['fixed', 'percentage']);
+            $table->decimal('admin_addon_amount', 10, 2);
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('package_activities');
+        Schema::dropIfExists('platform_settings');
     }
 };

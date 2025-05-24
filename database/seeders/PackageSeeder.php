@@ -43,14 +43,12 @@ class PackageSeeder extends Seeder
         foreach ($agents as $agent) {
             Package::factory(3)
                 ->withActivities(rand(2, 5))
-                ->withAddon()
                 ->create(['owner_id' => $agent->id]);
         }
 
         // Create some admin packages
-        Package::factory(5)
+        Package::factory(15)
             ->withActivities(rand(3, 6))
-            ->withAddon()
             ->create(['owner_id' => $admin->id]);
     
     }

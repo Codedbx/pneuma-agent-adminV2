@@ -13,15 +13,12 @@ return new class extends Migration
     {
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('package_id')->constrained()->onDelete('cascade');
+            $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
             $table->string('title');
             $table->text('description');
-            $table->string('location');
-            $table->datetime('start_time');
-            $table->datetime('end_time');
             $table->decimal('price', 10, 2);
             
-            $table->index(['package_id', 'title']);
+            $table->index(['agent_id', 'title']);
             $table->timestamps();
         });
     }

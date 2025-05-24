@@ -13,13 +13,38 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('booking_reference')->unique();
+            
+            // Guest information (user_id is optional)
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('guest_first_name');
+            $table->string('guest_last_name');
+            $table->string('guest_full_name')->virtualAs('CONCAT(guest_first_name, " ", guest_last_name)');
+            $table->string('guest_email');
+            $table->string('guest_phone')->nullable();
+            $table->string('guest_country')->nullable();
+            $table->text('guest_city')->nullable(); 
+            $table->text('guest_zip_code')->nullable();
+            $table->text('guest_gender')->nullable();
+
+            
+            // Package and pricing
             $table->foreignId('package_id')->constrained()->onDelete('cascade');
-            $table->decimal('admin_addon_amount', 10, 2)->default(0);
-            $table->decimal('agent_base_price', 10, 2);
+            $table->integer('pax_count');
+            
+            // Computed pricing breakdown
+            $table->decimal('base_price', 10, 2);
+            $table->decimal('activities_total', 10, 2);
+            $table->decimal('computed_agent_addon', 10, 2);
+            $table->decimal('computed_admin_addon', 10, 2);
+            $table->decimal('total_price_per_person', 10, 2);
             $table->decimal('total_price', 10, 2);
+            
             $table->enum('status', ['pending', 'confirmed', 'cancelled'])->default('pending');
             $table->timestamps();
+            
+            $table->index(['guest_email', 'status']);
+            $table->index('package_id');
         });
     }
 

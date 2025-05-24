@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('activity_time_slots', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('activity_id')->constrained()->onDelete('cascade');
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
             $table->timestamps();
         });
     }

@@ -15,12 +15,10 @@ class Activity extends Model
    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'package_id',
+        'agent_id',
         'title',
         'description',
         'location',
-        'start_time',
-        'end_time',
         'price',
     ];
 
@@ -30,9 +28,9 @@ class Activity extends Model
         'price' => 'decimal:2',
     ];
 
-    public function package(): BelongsTo
+    public function agent(): BelongsTo
     {
-        return $this->belongsTo(Package::class);
+        return $this->belongsTo(User::class);
     }
 
     public function registerMediaCollections(): void
