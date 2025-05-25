@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePackageRequest;
 use App\Http\Requests\UpdatePackageRequest;
+use App\Http\Resources\PackageResource;
 use App\Models\Package;
 use App\Services\PackageService;
 use Illuminate\Http\JsonResponse;
@@ -30,10 +31,30 @@ class PackageController extends Controller
         ]);
 
         $packages = $this->packageService->getFilteredPackages($filters);
+         $packages = $this->packageService->getFilteredPackages($filters);
+
+    if ($packages->isEmpty()) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'No packages found',
+        ], 404);
+    }
 
         return response()->json([
             'status' => 'success',
-            'data'   => $packages,
+            'data' => PackageResource::collection($packages),
+            'meta' => [
+                'current_page' => $packages->currentPage(),
+                'last_page' => $packages->lastPage(),
+                'total' => $packages->total(),
+                'per_page' => $packages->perPage(),
+                'from' => $packages->firstItem(),
+                'to' => $packages->lastItem(),
+            ],
+            'links' => [
+                'next_page_url' => $packages->nextPageUrl(),
+                'prev_page_url' => $packages->previousPageUrl(),
+            ]
         ]);
     }
 

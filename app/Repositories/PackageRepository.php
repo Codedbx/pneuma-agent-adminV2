@@ -10,12 +10,12 @@ class PackageRepository implements PackageRepositoryInterface
 {
     public function all()
     {
-        return Package::with(['activities', 'owner'])->get();
+        return Package::with(['activities.activity.timeSlots', 'owner'])->get();
     }
 
     public function find(int $id): ?Package
     {
-        return Package::with(['activities', 'owner'])->find($id);
+        return Package::with(['activities.activity.timeSlots', 'owner'])->find($id);
     }
 
     public function create(array $data): Package
@@ -44,12 +44,12 @@ class PackageRepository implements PackageRepositoryInterface
 
     public function filter(array $filters): LengthAwarePaginator
     {
-        $query = Package::with(['activities', 'owner'])
+        $query = Package::with(['activities.activity.timeSlots', 'owner'])
             ->visible();
 
         // Location filter
         if (!empty($filters['location'])) {
-            $query->byLocation($filters['location']);
+            $query->byDestination($filters['location']);
         }
 
         // Price range filter
