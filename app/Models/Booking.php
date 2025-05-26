@@ -29,6 +29,8 @@ class Booking extends Model
         'total_price_per_person',
         'total_price',
         'status',
+        'access_token',
+        'access_token_expires_at',
     ];
 
     protected $casts = [
@@ -40,6 +42,8 @@ class Booking extends Model
         'total_price_per_person'   => 'decimal:2',
         'total_price'              => 'decimal:2',
         'status'                   => 'string',
+        'access_token_expires_at'  => 'datetime',
+        'snapshot'                 => 'array',
     ];
 
     // Auto-generate booking_reference on creating

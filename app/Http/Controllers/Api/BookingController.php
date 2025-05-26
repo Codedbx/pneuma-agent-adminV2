@@ -12,7 +12,7 @@ class BookingController extends Controller
     public function __construct(
         private BookingService $bookingService
     ) {
-        $this->middleware('auth:sanctum');
+        // $this->middleware('auth:sanctum');
     }
 
     public function index(): JsonResponse
@@ -25,7 +25,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Storebooking $request): JsonResponse
+    public function store(StoreBookingRequest $request): JsonResponse
     {
         try {
             $booking = $this->bookingService->createBooking(

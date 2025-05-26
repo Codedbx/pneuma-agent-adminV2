@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('booking_slots', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('booking_id')->constrained()->onDelete('cascade');
-            $table->foreignId('activity_time_slot_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-        });
+        // Schema::create('booking_slots', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('booking_id')->constrained()->onDelete('cascade');
+        //     $table->foreignId('activity_time_slot_id')->constrained()->onDelete('cascade');
+        //     $table->timestamps();
+        // });
     }
 
     /**

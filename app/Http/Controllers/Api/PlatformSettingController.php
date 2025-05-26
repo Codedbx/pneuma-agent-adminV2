@@ -5,22 +5,22 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PlatformSettings\UpdatePlatformSettingRequest;
 use App\Http\Requests\UpdatePlatformSettingRequest as RequestsUpdatePlatformSettingRequest;
-use App\Services\Interfaces\PlatformSettingServiceInterface;
+use App\Services\PlatformSettingService;
 use Illuminate\Http\JsonResponse;
 
 class PlatformSettingController extends Controller
 {
     /**
-     * @var PlatformSettingServiceInterface
+     * @var PlatformSettingService
      */
     protected $platformSettingService;
 
     /**
      * PlatformSettingController constructor.
      *
-     * @param PlatformSettingServiceInterface $platformSettingService
+     * @param PlatformSettingService $platformSettingService
      */
-    public function __construct(PlatformSettingServiceInterface $platformSettingService)
+    public function __construct(PlatformSettingService $platformSettingService)
     {
         $this->platformSettingService = $platformSettingService;
         // $this->middleware('auth:sanctum');

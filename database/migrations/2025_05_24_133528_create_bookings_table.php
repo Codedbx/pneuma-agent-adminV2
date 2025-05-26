@@ -41,6 +41,12 @@ return new class extends Migration
             $table->decimal('total_price', 10, 2);
             
             $table->enum('status', ['pending', 'confirmed', 'cancelled'])->default('pending');
+
+            $table->json('snapshots')->require();
+
+            $table->string('access_token')->nullable()->unique();
+            $table->timestamp('access_token_expires_at')->nullable();
+
             $table->timestamps();
             
             $table->index(['guest_email', 'status']);

@@ -22,10 +22,13 @@ class PaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gateway' => 'required|in:stripe,paystack',
-            'customer_data' => 'required|array',
-            'customer_data.email' => 'required|email',
-            'customer_data.name' => 'required|string',
+            // 'gateway' => 'required|in:stripe,paystack',
+            // 'customer_data' => 'required|array',
+            // 'customer_data.email' => 'required|email',
+            // 'customer_data.name' => 'required|string',
+            'gateway' => ['required', 'string', 'in:stripe,paystack,espees'],
+            'return_url' => ['required', 'url'],
+            'cancel_url' => ['required', 'url'],
         ];
     }
 }

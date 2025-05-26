@@ -52,24 +52,56 @@ class BookingController extends Controller
     /**
      * Show single booking.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $booking = $this->bookingService->getUserBookings(auth()->id())
-                         ->where('id', $id)
-                         ->first();
+        $booking = $this->bookingService->getBooking($id);
+        if ($request->user()) {
+            if (!$booking || $booking->user_id !== $request->user()->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Booking not found',
+                ], 404);
+            }
 
-        if (! $booking) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Booking not found.',
-            ], 404);
+                'status' => 'success',
+                'data' => $booking,
+            ]);
         }
+
+        $validated = $request->validate([
+            'booking_reference' => 'required|string',
+            'access_token' => 'required|string',
+        ]);
+
+        if (!$booking ||
+            $booking->booking_reference !== $validated['booking_reference'] ||
+            $booking->access_token !== $validated['access_token']
+        ) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized or invalid booking reference',
+            ], 403);
+        }
+
+        if (!$booking ||
+            $booking->booking_reference !== $validated['booking_reference'] ||
+            $booking->access_token !== $validated['access_token'] ||
+            now()->greaterThan($booking->access_token_expires_at)
+        ) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized or expired access token',
+            ], 403);
+        }
+
 
         return response()->json([
             'status' => 'success',
-            'data'   => $booking,
+            'data' => $booking,
         ]);
     }
+
 
     /**
      * Confirm a booking (admin only).
