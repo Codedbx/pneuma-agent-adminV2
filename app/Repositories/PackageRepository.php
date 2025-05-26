@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Package;
 use App\Repositories\Contracts\PackageRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 class PackageRepository implements PackageRepositoryInterface
 {
@@ -15,8 +16,17 @@ class PackageRepository implements PackageRepositoryInterface
 
     public function find(int $id): ?Package
     {
-        return Package::with(['activities.activity.timeSlots', 'owner'])->find($id);
+        $package = Package::with(['activities.activity.timeSlots', 'owner'])
+                        ->find($id);
+
+        Log::info('PackageRepository@find', [
+            'id'      => $id,
+            'package' => $package,
+        ]);
+
+        return $package;
     }
+
 
     public function create(array $data): Package
     {
@@ -52,6 +62,10 @@ class PackageRepository implements PackageRepositoryInterface
             $query->byDestination($filters['location']);
         }
 
+        if (!empty($filters['search_title'])) {
+            $query->searchTitle($filters['search_title']);
+        }
+
         // Price range filter
         if (!empty($filters['min_price']) || !empty($filters['max_price'])) {
             $query->byPriceRange(
@@ -63,7 +77,7 @@ class PackageRepository implements PackageRepositoryInterface
         // Activities filter
         if (!empty($filters['activities'])) {
             $match = $filters['activity_match'] ?? 'any';
-            $query->withActivities($filters['activities'], $match);
+            $query->filterByActivityTitles($filters['activities'], $match);
         }
 
         // Sorting

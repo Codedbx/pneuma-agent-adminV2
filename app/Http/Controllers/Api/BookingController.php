@@ -25,7 +25,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Storebookin $request): JsonResponse
+    public function store(Storebooking $request): JsonResponse
     {
         try {
             $booking = $this->bookingService->createBooking(

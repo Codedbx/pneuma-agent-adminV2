@@ -21,7 +21,6 @@ class PackageResource extends JsonResource
             'base_price' => $this->base_price,
             'check_in_time' => $this->check_in_time,
             'check_out_time' => $this->check_out_time,
-            // ... add other fields you want ...
             'booking_start_date' => $this->booking_start_date,
             'booking_end_date' => $this->booking_end_date,
             'is_active' => $this->is_active,

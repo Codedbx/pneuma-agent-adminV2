@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Events\BookingCreated;
+use App\Models\ActivityTimeSlot;
 use App\Models\Booking;
 use App\Models\Package;
 use App\Models\PackageAddon;
+use App\Models\PlatformSetting;
 use App\Repositories\Contracts\BookingRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,63 +21,168 @@ class BookingService
     /**
      * Create a new booking, computing all pricing fields.
      */
+    // public function createBooking(array $data): Booking
+    // {
+    //     return DB::transaction(function () use ($data) {
+    //         $package = Package::with('activities')->findOrFail($data['package_id']);
+    //         $pax    = $data['pax_count'];
+
+    //         // Base + activities per person
+    //         $basePrice          = $package->base_price;
+    //         $activitiesTotal    = $package->activities->sum('price');
+            
+    //         // Agent addon per person
+    //         $agentAddonPerPerson = $package->agent_price_type === 'fixed'
+    //             ? $package->agent_addon_price
+    //             : ($basePrice * $package->agent_addon_price / 100);
+
+    //         // Global admin addon per person
+    //         $globalAddon = PackageAddon::latest()->first();
+    //         $adminAddonPerPerson = 0;
+    //         if ($globalAddon) {
+    //             $adminAddonPerPerson = $globalAddon->type === 'fixed'
+    //                 ? $globalAddon->amount
+    //                 : ($basePrice * $globalAddon->amount / 100);
+    //         }
+
+    //         $totalPerPerson = $basePrice
+    //             + $activitiesTotal
+    //             + $agentAddonPerPerson
+    //             + $adminAddonPerPerson;
+
+    //         $totalPriceAll = $totalPerPerson * $pax;
+
+    //         $booking = $this->bookingRepository->create([
+    //             'user_id'                  => $data['user_id'] ?? Auth::id(),
+    //             'guest_first_name'         => $data['guest_first_name'],
+    //             'guest_last_name'          => $data['guest_last_name'],
+    //             'guest_email'              => $data['guest_email'],
+    //             'guest_phone'              => $data['guest_phone'] ?? null,
+    //             'guest_country'            => $data['guest_country'] ?? null,
+    //             'guest_city'               => $data['guest_city'] ?? null,
+    //             'guest_zip_code'           => $data['guest_zip_code'] ?? null,
+    //             'guest_gender'             => $data['guest_gender'] ?? null,
+    //             'package_id'               => $package->id,
+    //             'pax_count'                => $pax,
+    //             'base_price'               => $basePrice,
+    //             'activities_total'         => $activitiesTotal,
+    //             'computed_agent_addon'     => $agentAddonPerPerson,
+    //             'computed_admin_addon'     => $adminAddonPerPerson,
+    //             'total_price_per_person'   => $totalPerPerson,
+    //             'total_price'              => $totalPriceAll,
+    //             'status'                   => 'pending',
+    //         ]);
+
+    //         event(new BookingCreated($booking));
+
+    //         return $booking;
+    //     });
+    // }
+
     public function createBooking(array $data): Booking
     {
         return DB::transaction(function () use ($data) {
             $package = Package::with('activities')->findOrFail($data['package_id']);
-            $pax    = $data['pax_count'];
 
-            // Base + activities per person
-            $basePrice          = $package->base_price;
-            $activitiesTotal    = $package->activities->sum('price');
-            
-            // Agent addon per person
-            $agentAddonPerPerson = $package->agent_price_type === 'fixed'
-                ? $package->agent_addon_price
-                : ($basePrice * $package->agent_addon_price / 100);
+            if (!$package->is_active) {
+                throw new \Exception('This package is no longer available.');
+            }
+            if (now()->lt($package->booking_start_date) || now()->gt($package->booking_end_date)) {
+                throw new \Exception('Booking window for this package has closed or not yet opened.');
+            }
+            $pax     = $data['pax_count'];
 
-            // Global admin addon per person
-            $globalAddon = PackageAddon::latest()->first();
-            $adminAddonPerPerson = 0;
-            if ($globalAddon) {
-                $adminAddonPerPerson = $globalAddon->type === 'fixed'
-                    ? $globalAddon->amount
-                    : ($basePrice * $globalAddon->amount / 100);
+            // 1) Compute price components
+            $basePrice       = $package->base_price;
+            $activitiesTotal = $package->activities->sum('price');
+
+            $agentAddonPerPerson = $package->agent_addon_type === 'fixed'
+                ? $package->agent_addon_amount
+                : ($basePrice * $package->agent_addon_amount / 100);
+
+            $adminSetting = PlatformSetting::first();
+            $withAgent   = $basePrice + $activitiesTotal + $agentAddonPerPerson;
+            $adminAddonPerPerson = $adminSetting->admin_addon_type === 'fixed'
+                ? $adminSetting->admin_addon_amount
+                : ($withAgent * $adminSetting->admin_addon_amount / 100);
+
+            $totalPerPerson = $withAgent + $adminAddonPerPerson;
+            $totalPriceAll  = $totalPerPerson * $pax;
+
+            // 2) Build a snapshot including each activity *and* the chosen slot details
+            $snapshotActivities = [];
+            foreach ($data['slots'] as $slotChoice) {
+                // Fetch the latest slot record
+                $timeSlot = ActivityTimeSlot::findOrFail($slotChoice['slot_id']);
+
+                // Compare server-side to client-provided times
+                if ($timeSlot->starts_at->toDateTimeString() !== $slotChoice['slot_start']
+                || $timeSlot->ends_at->toDateTimeString()   !== $slotChoice['slot_end']) {
+                    throw new \Exception("Time slot {$timeSlot->id} has changed. Please refresh and try again.");
+                }
+
+                // Snapshot it
+                $snapshotActivities[] = [
+                    'activity_id'   => $timeSlot->activity_id,
+                    'activity_title'=> $timeSlot->activity->title,
+                    'activity_price'=> $timeSlot->activity->price,
+                    'slot_id'       => $timeSlot->id,
+                    'slot_start'    => $timeSlot->starts_at->toDateTimeString(),
+                    'slot_end'      => $timeSlot->ends_at->toDateTimeString(),
+                ];
             }
 
-            $totalPerPerson = $basePrice
-                + $activitiesTotal
-                + $agentAddonPerPerson
-                + $adminAddonPerPerson;
-
-            $totalPriceAll = $totalPerPerson * $pax;
-
-            $booking = $this->bookingRepository->create([
-                'user_id'                  => $data['user_id'] ?? Auth::id(),
-                'guest_first_name'         => $data['guest_first_name'],
-                'guest_last_name'          => $data['guest_last_name'],
-                'guest_email'              => $data['guest_email'],
-                'guest_phone'              => $data['guest_phone'] ?? null,
-                'guest_country'            => $data['guest_country'] ?? null,
-                'guest_city'               => $data['guest_city'] ?? null,
-                'guest_zip_code'           => $data['guest_zip_code'] ?? null,
-                'guest_gender'             => $data['guest_gender'] ?? null,
-                'package_id'               => $package->id,
-                'pax_count'                => $pax,
-                'base_price'               => $basePrice,
-                'activities_total'         => $activitiesTotal,
-                'computed_agent_addon'     => $agentAddonPerPerson,
-                'computed_admin_addon'     => $adminAddonPerPerson,
+            $snapshot = [
+                'package'                  => [
+                    'id'         => $package->id,
+                    'title'      => $package->title,
+                    'base_price' => $basePrice,
+                ],
+                'activities'               => $snapshotActivities,
+                'agent_addon_per_person'   => $agentAddonPerPerson,
+                'admin_addon_per_person'   => $adminAddonPerPerson,
                 'total_price_per_person'   => $totalPerPerson,
-                'total_price'              => $totalPriceAll,
-                'status'                   => 'pending',
+                'total_price_all'          => $totalPriceAll,
+                'group_size'               => $pax,
+            ];
+
+            // 3) Create the booking record
+            $booking = $this->bookingRepository->create([
+                'user_id'                => $data['user_id'] ?? Auth::id(),
+                'guest_first_name'       => $data['guest_first_name'],
+                'guest_last_name'        => $data['guest_last_name'],
+                'guest_email'            => $data['guest_email'],
+                'guest_phone'            => $data['guest_phone'] ?? null,
+                'guest_country'          => $data['guest_country'] ?? null,
+                'guest_city'             => $data['guest_city'] ?? null,
+                'guest_zip_code'         => $data['guest_zip_code'] ?? null,
+                'guest_gender'           => $data['guest_gender'] ?? null,
+                'package_id'             => $package->id,
+                'pax_count'              => $pax,
+                'base_price'             => $basePrice,
+                'activities_total'       => $activitiesTotal,
+                'computed_agent_addon'   => $agentAddonPerPerson,
+                'computed_admin_addon'   => $adminAddonPerPerson,
+                'total_price_per_person' => $totalPerPerson,
+                'total_price'            => $totalPriceAll,
+                'status'                 => 'pending',
+                'snapshot'               => $snapshot,
             ]);
+
+            // 4) Persist the BookingSlot rows
+            foreach ($data['slots'] as $slotChoice) {
+                $this->bookingRepository->createSlot(
+                    $booking->id,
+                    $slotChoice['activity_time_slot_id']
+                );
+            }
 
             event(new BookingCreated($booking));
 
             return $booking;
         });
     }
+
 
     public function confirmBooking(int $id): Booking
     {

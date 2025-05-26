@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePackageRequest;
 use App\Services\PackageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PackageController extends Controller
 {
@@ -20,7 +21,7 @@ class PackageController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only([
-            'location', 'min_price', 'max_price', 'activities', 
+            'location', 'min_price', 'max_price', 'activities', 'search_title',
             'activity_match', 'sort_by', 'sort_dir', 'per_page'
         ]);
 
@@ -56,6 +57,8 @@ class PackageController extends Controller
     public function show(int $id): JsonResponse
     {
         $package = $this->packageService->getPackage($id);
+
+        
 
         if (!$package) {
             return response()->json([

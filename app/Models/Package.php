@@ -96,6 +96,11 @@ class Package extends Model implements HasMedia
         return $query->where('visibility', 'public')->where('is_active', true);
     }
 
+    public function scopeSearchTitle($query, string $term)
+    {
+        return $query->where('title', 'LIKE', '%' . $term . '%');
+    }
+
     public function scopeByDestination($query, string $destination)
     {
         return $query->where('location', 'like', "%{$destination}%");
@@ -111,6 +116,28 @@ class Package extends Model implements HasMedia
         return $query->where('booking_start_date', '<=', $end)
             ->where('booking_end_date', '>=', $start);
     }
+
+    public function scopeFilterByActivityTitles($query, array $titles, string $match = 'any')
+    {
+        if ($match === 'all') {
+            foreach ($titles as $t) {
+                $query->whereHas('activities', fn($q) => 
+                    $q->where('title', 'LIKE', "%{$t}%")
+                );
+            }
+        } elseif ($match === 'none') {
+            $query->whereDoesntHave('activities', fn($q) => 
+                $q->whereIn('title', $titles) 
+            );
+        } else {
+            $query->whereHas('activities', fn($q) => 
+                $q->whereIn('title', $titles)
+            );
+        }
+
+        return $query;
+    }
+
 }
 
 // namespace App\Models;
