@@ -29,9 +29,12 @@ class PackageController extends Controller
             'start_date', 'end_date',
             'sort_by', 'sort_dir',
             'search_title',
-            'activities', 'activity_match',
+            'activities', 
+            'activity_match',
             'per_page',
         ]);
+
+        Log::info('Package filters:', $filters);
 
         $packages = $this->packageService->getFilteredPackages($filters);
 

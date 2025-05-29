@@ -32,6 +32,16 @@ class Package extends Model implements HasMedia
         'location',
         'owner_id',
         'visibility',
+      
+        'flight_from',
+        'flight_to',
+        'airline_name',
+        'booking_class',
+        
+        'hotel_name',
+        'hotel_star_rating',
+        'hotel_checkin',
+        'hotel_checkout',
     ];
 
     protected $casts = [
@@ -44,6 +54,10 @@ class Package extends Model implements HasMedia
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'is_refundable' => 'boolean',
+
+        'hotel_checkin' => 'datetime',
+        'hotel_checkout' => 'datetime',
+        'hotel_star_rating' => 'integer',
     ];
 
     // Relationships

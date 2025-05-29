@@ -30,6 +30,18 @@ return new class extends Migration
             $table->string('location');
             $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
             $table->enum('visibility', ['public', 'private'])->default('public');
+
+            // Flight details
+            $table->string('flight_from')->nullable();
+            $table->string('flight_to')->nullable();
+            $table->string('airline_name')->nullable();
+            $table->enum('booking_class', ['economy', 'business'])->nullable();
+            
+            // Hotel details
+            $table->string('hotel_name')->nullable();
+            $table->integer('hotel_star_rating')->nullable();
+            $table->dateTime('hotel_checkin')->nullable();
+            $table->dateTime('hotel_checkout')->nullable();
             
             $table->index(['location', 'visibility']);
             $table->index('base_price');

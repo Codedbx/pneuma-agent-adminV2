@@ -8,14 +8,14 @@ use App\Models\Booking;
 use App\Models\Package;
 use App\Models\PackageAddon;
 use App\Models\PlatformSetting;
-use App\Repositories\Contracts\BookingRepositoryInterface;
+use App\Repositories\BookingRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class BookingService
 {
     public function __construct(
-        private BookingRepositoryInterface $bookingRepository
+        private BookingRepository $bookingRepository
     ) {}
 
     

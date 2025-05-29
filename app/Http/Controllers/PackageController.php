@@ -11,114 +11,198 @@ use Illuminate\Support\Facades\Log;
 
 class PackageController extends Controller
 {
-     public function __construct(
-        private PackageService $packageService
+    public function __construct(
+        private PackageService $packageService,
+        private ActivityService $activityService
     ) {
-        // $this->middleware('auth:sanctum');
-        // $this->middleware('role:admin|agent')->except(['index', 'show']);
+        $this->authorizeResource(Package::class, 'package');
     }
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the packages.
+     */
+    public function index(Request $request)
     {
         $filters = $request->only([
-            'location', 'min_price', 'max_price', 'activities', 'search_title',
-            'activity_match', 'sort_by', 'sort_dir', 'per_page'
+            'search', 'destination', 'price_min', 'price_max', 
+            'date_start', 'date_end', 'activities'
         ]);
+        
+        if ($request->has('owner') && $request->user()->hasRole(['agent', 'admin'])) {
+            $packages = $this->packageService->getUserPackages(Auth::user());
+        } else {
+            $packages = $this->packageService->getFilteredPackages($filters);
+        }
 
-        $packages = $this->packageService->getFilteredPackages($filters);
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $packages,
+        return Inertia::render('Packages/Index', [
+            'packages' => $packages,
+            'filters' => $filters,
         ]);
     }
 
-    public function store(StorePackageRequest $request): JsonResponse
+    /**
+     * Show the form for creating a new package.
+     */
+    public function create()
+    {
+        $activities = [];
+        
+        if (Auth::user()->hasRole('agent')) {
+            $activities = $this->activityService->getAgentActivities(Auth::id());
+        } else if (Auth::user()->hasRole('admin')) {
+            $activities = $this->activityService->getAllActivities();
+        }
+        
+        return Inertia::render('Packages/Create', [
+            'activities' => $activities,
+        ]);
+    }
+
+    /**
+     * Store a newly created package in storage.
+     */
+    public function store(StorePackageRequest $request)
     {
         $package = $this->packageService->createPackage($request->validated());
 
-        // Handle media uploads if present
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $package->addMediaFromRequest('images')
-                    ->each(function ($fileAdder) {
-                        $fileAdder->toMediaCollection('images');
-                    });
+        if ($request->hasFile('package_images')) {
+            foreach ($request->file('package_images') as $image) {
+                $package->addMedia($image)->toMediaCollection('package_images');
             }
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Package created successfully',
-            'data' => $package->load(['activities', 'media']),
-        ], 201);
+        if ($request->hasFile('package_video')) {
+            $package->addMedia($request->file('package_video'))->toMediaCollection('package_videos');
+        }
+
+        return redirect()->route('packages.show', $package)
+            ->with('success', 'Package created successfully.');
     }
 
-    public function show(int $id): JsonResponse
+    /**
+     * Display the specified package.
+     */
+    public function show(Package $package)
     {
-        $package = $this->packageService->getPackage($id);
-
+        $package->load(['activities.activity', 'owner']);
+        $totalPrice = $this->packageService->calculateTotalPrice($package);
         
-
-        if (!$package) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Package not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $package->load(['activities', 'owner', 'media']),
+        return Inertia::render('Packages/Show', [
+            'package' => $package,
+            'totalPrice' => $totalPrice,
+            'images' => $package->getMedia('package_images')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getUrl(),
+                    'thumbnail' => $media->getUrl('thumb'),
+                ];
+            }),
+            'video' => $package->getFirstMedia('package_videos') ? [
+                'id' => $package->getFirstMedia('package_videos')->id,
+                'url' => $package->getFirstMedia('package_videos')->getUrl(),
+            ] : null,
         ]);
     }
 
-    public function update(UpdatePackageRequest $request, int $id): JsonResponse
+    /**
+     * Show the form for editing the specified package.
+     */
+    public function edit(Package $package)
     {
-        $package = $this->packageService->updatePackage($id, $request->validated());
+        $package->load('activities.activity');
+        
+        $activities = [];
+        if (Auth::user()->hasRole('agent')) {
+            $activities = $this->activityService->getAgentActivities(Auth::id());
+        } else if (Auth::user()->hasRole('admin')) {
+            $activities = $this->activityService->getAllActivities();
+        }
+        
+        return Inertia::render('Packages/Edit', [
+            'package' => $package,
+            'activities' => $activities,
+            'images' => $package->getMedia('package_images')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getUrl(),
+                    'thumbnail' => $media->getUrl('thumb'),
+                ];
+            }),
+            'video' => $package->getFirstMedia('package_videos') ? [
+                'id' => $package->getFirstMedia('package_videos')->id,
+                'url' => $package->getFirstMedia('package_videos')->getUrl(),
+            ] : null,
+        ]);
+    }
 
-        // Handle media uploads if present
-        if ($request->hasFile('images')) {
-            $package->clearMediaCollection('images');
-            foreach ($request->file('images') as $image) {
-                $package->addMediaFromRequest('images')
-                    ->each(function ($fileAdder) {
-                        $fileAdder->toMediaCollection('images');
-                    });
+    /**
+     * Update the specified package in storage.
+     */
+    public function update(UpdatePackageRequest $request, Package $package)
+    {
+        $package = $this->packageService->updatePackage($package->id, $request->validated());
+
+        if ($request->hasFile('package_images')) {
+            foreach ($request->file('package_images') as $image) {
+                $package->addMedia($image)->toMediaCollection('package_images');
             }
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Package updated successfully',
-            'data' => $package->load(['activities', 'media']),
-        ]);
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        $deleted = $this->packageService->deletePackage($id);
-
-        if (!$deleted) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Package not found',
-            ], 404);
+        if ($request->hasFile('package_video')) {
+            // Remove existing video if it exists
+            if ($package->getFirstMedia('package_videos')) {
+                $package->getFirstMedia('package_videos')->delete();
+            }
+            $package->addMedia($request->file('package_video'))->toMediaCollection('package_videos');
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Package deleted successfully',
-        ]);
+        if ($request->has('delete_media') && is_array($request->delete_media)) {
+            foreach ($request->delete_media as $mediaId) {
+                $media = $package->media()->find($mediaId);
+                if ($media) {
+                    $media->delete();
+                }
+            }
+        }
+
+        return redirect()->route('packages.show', $package)
+            ->with('success', 'Package updated successfully.');
     }
 
-    // public function myPackages(): JsonResponse
-    // {
-    //     $packages = $this->packageService->getPackagesByOwner(auth()->id());
+    /**
+     * Remove the specified package from storage.
+     */
+    public function destroy(Package $package)
+    {
+        $this->packageService->deletePackage($package->id);
+        
+        return redirect()->route('packages.index')
+            ->with('success', 'Package deleted successfully.');
+    }
 
-    //     return response()->json([
-    //         'status' => 'success',
-    //         'data' => $packages,
-    //     ]);
-    // }
+    /**
+     * Toggle the featured status of a package.
+     */
+    public function toggleFeatured(Package $package)
+    {
+        $this->authorize('update', $package);
+        
+        $package->is_featured = !$package->is_featured;
+        $package->save();
+        
+        return back()->with('success', 'Package featured status updated.');
+    }
+
+    /**
+     * Toggle the active status of a package.
+     */
+    public function toggleActive(Package $package)
+    {
+        $this->authorize('update', $package);
+        
+        $package->is_active = !$package->is_active;
+        $package->save();
+        
+        return back()->with('success', 'Package active status updated.');
+    }
 }

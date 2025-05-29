@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -25,12 +27,20 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(StoreBookingRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+
+    //public function store(StoreBookingRequest $request): JsonResponse
+        
         try {
+
+            Log::info('Creating booking', [
+                'package_id' => $request->package_id,
+                'data' => $request->all(),
+            ]);
             $booking = $this->bookingService->createBooking(
                 $request->package_id,
-                $request->validated()
+                $request->all(),
             );
 
             return response()->json([
