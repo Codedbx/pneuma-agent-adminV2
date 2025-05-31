@@ -10,7 +10,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Activity extends Model
+class Activity extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\ActivityFactory> */
    use HasFactory, InteractsWithMedia;
@@ -41,7 +41,8 @@ class Activity extends Model
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('images')
+        $this->addMediaCollection('activity_images')
+            ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
     }
 

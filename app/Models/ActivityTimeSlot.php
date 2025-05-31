@@ -20,7 +20,6 @@ class ActivityTimeSlot extends Model
         'activity_id',
         'starts_at',
         'ends_at',
-        'capacity',
     ];
 
     /**

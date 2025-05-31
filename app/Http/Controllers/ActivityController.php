@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Activity;
 use App\Services\ActivityService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Http\Requests\StoreActivityRequest;
 use App\Http\Requests\UpdateActivityRequest;
@@ -13,128 +11,135 @@ use App\Http\Requests\UpdateActivityRequest;
 
 class ActivityController extends Controller
 {
-     public function __construct(private ActivityService $activityService)
-    {
-        // $this->authorizeResource(Activity::class, 'activity');
-    }
+    public function __construct(
+        private ActivityService $activityService
+    ) {}
 
     /**
-     * Display a listing of the activities.
+     * Display all activities
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'location', 'price_min', 'price_max']);
-        
-        if ($request->has('agent') && $request->user()->hasRole('agent')) {
-            $activities = $this->activityService->getAgentActivities(Auth::id(), $filters);
-        } else {
-            $activities = $this->activityService->getAllActivities($filters);
-        }
+        $filters = $request->only([
+            'title', 
+            'location', 
+            'min_price', 
+            'max_price',
+            'start_date',
+            'end_date',
+            'agent_id'
+        ]);
 
-        return Inertia::render('Activities/Index', [
+        $activities = $this->activityService->getAllActivities($filters);
+
+        return Inertia::render('activities/allActivity', [
             'activities' => $activities,
-            'filters' => $filters,
+            'filters' => $filters
         ]);
     }
 
     /**
-     * Show the form for creating a new activity.
+     * Display activities for a specific agent
      */
-    public function create()
+    public function agentActivities(Request $request, int $agentId)
     {
-        return Inertia::render('Activities/Create');
+        $filters = $request->only([
+            'title', 
+            'location', 
+            'min_price', 
+            'max_price',
+            'start_date',
+            'end_date'
+        ]);
+
+        $activities = $this->activityService->getAgentActivities($agentId, $filters);
+
+        return Inertia::render('activities/agentActivities', [
+            'activities' => $activities,
+            'agentId' => $agentId,
+            'filters' => $filters
+        ]);
     }
 
     /**
-     * Store a newly created activity in storage.
+     * Display activity details
+     */
+    public function show(int $id)
+    {
+        $activity = $this->activityService->getActivity($id);
+
+        return Inertia::render('activities/Show', [
+            'activity' => $activity
+        ]);
+    }
+    
+
+    public function create()
+    {
+        return Inertia::render('activities/createActivity');
+    }
+
+    public function edit(int $id)
+    {
+        $activity = $this->activityService->getActivity($id);
+
+        return Inertia::render('activities/createActivity', [
+            'activity' => $activity
+        ]);
+    }
+
+    /**
+     * Store new activity
      */
     public function store(StoreActivityRequest $request)
     {
-        $activity = $this->activityService->createActivity($request->validated());
+        $validated = $request->validated();
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $activity->addMedia($image)->toMediaCollection('images');
-            }
-        }
+        $activity = $this->activityService->createActivity($validated);
 
-        return redirect()->route('activities.show', $activity)
-            ->with('success', 'Activity created successfully.');
+        return redirect()->route('activities.show', $activity->id)
+            ->with('success', 'Activity created successfully!');
     }
 
     /**
-     * Display the specified activity.
+     * Update existing activity
      */
-    public function show(Activity $activity)
+    public function update(Request $request, int $id)
     {
-        $activity->load(['timeSlots', 'agent']);
-        
-        return Inertia::render('Activities/Show', [
-            'activity' => $activity,
-            'media' => $activity->getMedia('images')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getUrl(),
-                    'thumbnail' => $media->getUrl('thumb'),
-                ];
-            }),
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'location' => 'sometimes|string|max:255',
+            'price' => 'sometimes|numeric|min:0',
+            'start_time' => 'nullable|date',
+            'end_time' => 'nullable|date|after:start_time',
+            'time_slots' => 'nullable|array',
+            'time_slots.*.id' => 'sometimes|integer|exists:activity_time_slots,id',
+            'time_slots.*.starts_at' => 'required_with:time_slots|date',
+            'time_slots.*.ends_at' => 'required_with:time_slots|date|after:time_slots.*.starts_at',
+            'time_slots.*.capacity' => 'required_with:time_slots|integer|min:1',
+            'delete_time_slots' => 'nullable|array',
+            'delete_time_slots.*' => 'integer|exists:activity_time_slots,id',
+            'replace_slots' => 'sometimes|boolean',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        $activity = $this->activityService->updateActivity($id, $validated);
+
+        return redirect()->route('activities.show', $id)
+            ->with('success', 'Activity updated successfully!');
     }
 
     /**
-     * Show the form for editing the specified activity.
+     * Delete activity
      */
-    public function edit(Activity $activity)
+    public function destroy(int $id)
     {
-        $activity->load('timeSlots');
-        
-        return Inertia::render('Activities/Edit', [
-            'activity' => $activity,
-            'media' => $activity->getMedia('images')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getUrl(),
-                    'thumbnail' => $media->getUrl('thumb'),
-                ];
-            }),
-        ]);
-    }
+        $this->activityService->deleteActivity($id);
 
-    /**
-     * Update the specified activity in storage.
-     */
-    public function update(UpdateActivityRequest $request, Activity $activity)
-    {
-        $activity = $this->activityService->updateActivity($activity->id, $request->validated());
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $activity->addMedia($image)->toMediaCollection('images');
-            }
-        }
-
-        if ($request->has('delete_media') && is_array($request->delete_media)) {
-            foreach ($request->delete_media as $mediaId) {
-                $media = $activity->media()->find($mediaId);
-                if ($media) {
-                    $media->delete();
-                }
-            }
-        }
-
-        return redirect()->route('activities.show', $activity)
-            ->with('success', 'Activity updated successfully.');
-    }
-
-    /**
-     * Remove the specified activity from storage.
-     */
-    public function destroy(Activity $activity)
-    {
-        $this->activityService->deleteActivity($activity->id);
-        
         return redirect()->route('activities.index')
-            ->with('success', 'Activity deleted successfully.');
+            ->with('success', 'Activity deleted successfully!');
     }
 
 }

@@ -3,41 +3,168 @@
 namespace App\Services;
 
 use App\Models\Activity;
-use App\Repositories\Contracts\ActivityRepositoryInterface;
+use App\Repositories\ActivityRepository;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class ActivityService
 {
     public function __construct(
-        private ActivityRepositoryInterface $activityRepository
+        private ActivityRepository $activityRepository
     ) {}
 
-    public function getAllActivities()
+   /**
+     * Get all activities with optional filters
+     */
+    public function getAllActivities(array $filters = []): Collection|LengthAwarePaginator
     {
-        return $this->activityRepository->all();
+        return $this->activityRepository->filter($filters);
     }
 
+    /**
+     * Get activities for a specific agent
+     */
+    public function getAgentActivities(int $agentId, array $filters = []): Collection|LengthAwarePaginator
+    {
+        return $this->activityRepository->getByAgentId($agentId, $filters);
+    }
+
+    /**
+     * Get a single activity by ID
+     */
     public function getActivity(int $id): ?Activity
     {
         return $this->activityRepository->find($id);
     }
 
+    /**
+     * Create a new activity with related data
+     */
     public function createActivity(array $data): Activity
     {
-        return $this->activityRepository->create($data);
+        return DB::transaction(function () use ($data) {
+            $payload = $this->mapActivityData($data);
+            $activity = $this->activityRepository->create($payload);
+
+            // Handle time slots
+            if (!empty($data['time_slots'])) {
+                $this->createTimeSlots($activity, $data['time_slots']);
+            }
+
+            // Handle image uploads
+            if (!empty($data['images'])) {
+                $this->addActivityImages($activity, $data['images']);
+            }
+
+            return $activity->load(['timeSlots', 'media']);
+        });
     }
 
+    /**
+     * Update an existing activity
+     */
     public function updateActivity(int $id, array $data): Activity
     {
-        return $this->activityRepository->update($id, $data);
+        return DB::transaction(function () use ($id, $data) {
+            $payload = $this->mapActivityData($data);
+            $activity = $this->activityRepository->update($id, $payload);
+
+            // Handle time slots operations
+            if (isset($data['time_slots'])) {
+                $this->updateTimeSlots($activity, $data);
+            }
+
+            // Handle image uploads
+            if (isset($data['images'])) {
+                $this->addActivityImages($activity, $data['images']);
+            }
+
+            return $activity->load(['timeSlots', 'media']);
+        });
     }
 
+    /**
+     * Delete an activity
+     */
     public function deleteActivity(int $id): bool
     {
         return $this->activityRepository->delete($id);
     }
 
-    public function getActivitiesByPackage(int $packageId)
+    /**
+     * Map request data to activity fields
+     */
+    private function mapActivityData(array $data): array
     {
-        return $this->activityRepository->getByPackage($packageId);
+        return [
+            'agent_id' => $data['agent_id'] ?? Auth::id(),
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'location' => $data['location'],
+            'price' => $data['price'],
+            'start_time' => $data['start_time'] ?? null,
+            'end_time' => $data['end_time'] ?? null,
+        ];
+    }
+
+    /**
+     * Create time slots for an activity
+     */
+    private function createTimeSlots(Activity $activity, array $timeSlots): void
+    {
+        foreach ($timeSlots as $slotData) {
+            $activity->timeSlots()->create([
+                'starts_at' => $slotData['starts_at'],
+                'ends_at' => $slotData['ends_at'],
+                'capacity' => $slotData['capacity']
+            ]);
+        }
+    }
+
+    /**
+     * Update time slots for an activity
+     */
+    private function updateTimeSlots(Activity $activity, array $data): void
+    {
+        // Remove existing time slots if requested
+        if (isset($data['replace_slots']) && $data['replace_slots']) {
+            $activity->timeSlots()->delete();
+        }
+
+        // Process each time slot
+        foreach ($data['time_slots'] as $slotData) {
+            if (isset($slotData['id'])) {
+                // Update existing slot
+                $activity->timeSlots()->where('id', $slotData['id'])->update([
+                    'starts_at' => $slotData['starts_at'],
+                    'ends_at' => $slotData['ends_at'],
+                    'capacity' => $slotData['capacity']
+                ]);
+            } else {
+                // Create new slot
+                $activity->timeSlots()->create([
+                    'starts_at' => $slotData['starts_at'],
+                    'ends_at' => $slotData['ends_at'],
+                    'capacity' => $slotData['capacity']
+                ]);
+            }
+        }
+
+        // Delete specified time slots
+        if (!empty($data['delete_time_slots'])) {
+            $activity->timeSlots()->whereIn('id', $data['delete_time_slots'])->delete();
+        }
+    }
+
+    /**
+     * Add images to an activity
+     */
+    private function addActivityImages(Activity $activity, array $images): void
+    {
+        foreach ($images as $image) {
+            $activity->addMedia($image)->toMediaCollection('images');
+        }
     }
 }

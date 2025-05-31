@@ -65,10 +65,10 @@ const footerNavItems: NavItem[] = [
         icon: Calendar,
         key: "bookings",
         items: [
-        { title: "All Bookings", href: "/bookings" },
-        { title: "Pending", href: "/bookings?status=pending" },
-        { title: "Confirmed", href: "/bookings?status=confirmed" },
-        { title: "Cancelled", href: "/bookings?status=cancelled" },
+        { title: "All Bookings", href: "/booking/all" },
+        { title: "Pending", href: "/booking?status=pending" },
+        { title: "Confirmed", href: "/booking?status=confirmed" },
+        { title: "Cancelled", href: "/booking?status=cancelled" },
         ],
     },
     {
@@ -76,10 +76,10 @@ const footerNavItems: NavItem[] = [
         icon: FileText,
         key: "invoices",
         items: [
-        { title: "All Invoices", href: "/invoices" },
-        { title: "Paid", href: "/invoices?status=paid" },
-        { title: "Pending", href: "/invoices?status=pending" },
-        { title: "Overdue", href: "/invoices?status=overdue" },
+        { title: "All Invoices", href: "/invoice/all" },
+        { title: "Paid", href: "/invoice?status=paid" },
+        { title: "Pending", href: "/invoice?status=pending" },
+        { title: "Overdue", href: "/invoice?status=overdue" },
         ],
     },
     {
@@ -87,17 +87,17 @@ const footerNavItems: NavItem[] = [
       icon: Package,
       key: "packages",
       items: [
-        { title: "All Packages", href: "/packages" },
-        { title: "Create Packages", href: "/package-builder" },
+        { title: "All Packages", href: "/packages/all" },
+        { title: "Create Packages", href: "/packages/create" },
       ],
     },
-    {
+    { 
       title: "Activities",
       icon: Clock,
       key: "activities",
       items: [
-        { title: "All Activities", href: "/activities" },
-        { title: "Create Activities", href: "/create-activities" },
+        { title: "All Activities", href: "/activities/all" },
+        { title: "Create Activities", href: "/activities/create" },
       ],
     },
     {
@@ -105,7 +105,7 @@ const footerNavItems: NavItem[] = [
       icon: Users,
       key: "user-management",
       items: [
-        { title: "All Users", href: "/users" },
+        { title: "All Users", href: "/user/all" },
         { title: "Create User", href: "/user/create" },
         { title: "Admins", href: "/user?role=admin" },
         { title: "Agents", href: "/user?role=agent" },

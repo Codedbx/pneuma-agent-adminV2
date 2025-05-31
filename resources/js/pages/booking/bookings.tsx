@@ -1,143 +1,142 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-// import { Search, MoreHorizontal, Calendar, Download } from 'lucide-react';
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from '@/components/ui/table';
-// import { Checkbox } from '@/components/ui/checkbox';
-// import { Button } from '@/components/ui/button';
-// import { Input } from '@/components/ui/input';
-// import { Badge } from '@/components/ui/badge';
+import { Search, MoreHorizontal, Calendar, Download } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Head } from '@inertiajs/react';
-// import { useState } from 'react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Booking',
-        href: '/booking',
+        href: '/booking/all',
     },
 ];
 
-export default function Booking() {
+export default function Bookings() {
 
-  // const [searchQuery, setSearchQuery] = useState('');
-  // const [selectedRows, setSelectedRows] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRows, setSelectedRows] = useState(new Set());
 
-  // const invoices = [
-  //   {
-  //     id: 1,
-  //     user: {
-  //       name: "Kate Morrison",
-  //       avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face"
-  //     },
-  //     bookingRef: "DEX236-763",
-  //     tripType: "Venice Dream",
-  //     date: "25 Jun-30 Jun",
-  //     total: "892",
-  //     status: "Paid"
-  //   },
-  //   {
-  //     id: 2,
-  //     user: {
-  //       name: "Aliah Lane",
-  //       avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face"
-  //     },
-  //     bookingRef: "DEX236-763",
-  //     tripType: "Safari Adventure",
-  //     date: "25 Jun-30 Jun",
-  //     total: "892",
-  //     status: "Partially Paid"
-  //   },
-  //   {
-  //     id: 3,
-  //     user: {
-  //       name: "Andi Lane",
-  //       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
-  //     },
-  //     bookingRef: "DEX236-763",
-  //     tripType: "Alpin Escape",
-  //     date: "25 Jun-30 Jun",
-  //     total: "892",
-  //     status: "Complete"
-  //   },
-  //   {
-  //     id: 4,
-  //     user: {
-  //       name: "Drew Cano",
-  //       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face"
-  //     },
-  //     bookingRef: "DEX236-763",
-  //     tripType: "Venice Dream",
-  //     date: "25 Jun-30 Jun",
-  //     total: "892",
-  //     status: "Unpaid"
-  //   },
-  //   {
-  //     id: 5,
-  //     user: {
-  //       name: "Koray Okumus",
-  //       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face"
-  //     },
-  //     bookingRef: "DEX236-763",
-  //     tripType: "Venice Dream",
-  //     date: "25 Jun-30 Jun",
-  //     total: "892",
-  //     status: "Paid"
-  //   }
-  // ];
+  const invoices = [
+    {
+      id: 1,
+      user: {
+        name: "Kate Morrison",
+        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face"
+      },
+      bookingRef: "DEX236-763",
+      tripType: "Venice Dream",
+      date: "25 Jun-30 Jun",
+      total: "892",
+      status: "Paid"
+    },
+    {
+      id: 2,
+      user: {
+        name: "Aliah Lane",
+        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face"
+      },
+      bookingRef: "DEX236-763",
+      tripType: "Safari Adventure",
+      date: "25 Jun-30 Jun",
+      total: "892",
+      status: "Partially Paid"
+    },
+    {
+      id: 3,
+      user: {
+        name: "Andi Lane",
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
+      },
+      bookingRef: "DEX236-763",
+      tripType: "Alpin Escape",
+      date: "25 Jun-30 Jun",
+      total: "892",
+      status: "Complete"
+    },
+    {
+      id: 4,
+      user: {
+        name: "Drew Cano",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face"
+      },
+      bookingRef: "DEX236-763",
+      tripType: "Venice Dream",
+      date: "25 Jun-30 Jun",
+      total: "892",
+      status: "Unpaid"
+    },
+    {
+      id: 5,
+      user: {
+        name: "Koray Okumus",
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face"
+      },
+      bookingRef: "DEX236-763",
+      tripType: "Venice Dream",
+      date: "25 Jun-30 Jun",
+      total: "892",
+      status: "Paid"
+    }
+  ];
 
-  // const getStatusColor = (status:string) => {
-  //   switch (status) {
-  //     case 'Paid':
-  //       return 'bg-green-100 text-green-700 hover:bg-green-100';
-  //     case 'Partially Paid':
-  //       return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
-  //     case 'Complete':
-  //       return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
-  //     case 'Unpaid':
-  //       return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
-  //     default:
-  //       return 'bg-gray-100 text-gray-600 hover:bg-gray-100';
-  //   }
-  // };
+  const getStatusColor = (status:string) => {
+    switch (status) {
+      case 'Paid':
+        return 'bg-green-100 text-green-700 hover:bg-green-100';
+      case 'Partially Paid':
+        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
+      case 'Complete':
+        return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
+      case 'Unpaid':
+        return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
+      default:
+        return 'bg-gray-100 text-gray-600 hover:bg-gray-100';
+    }
+  };
 
-  // const handleSelectRow = (id : number) => {
-  //   const newSelected = new Set(selectedRows);
-  //   if (newSelected.has(id)) {
-  //     newSelected.delete(id);
-  //   } else {
-  //     newSelected.add(id);
-  //   }
-  //   setSelectedRows(newSelected);
-  // };
+  const handleSelectRow = (id : number) => {
+    const newSelected = new Set(selectedRows);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedRows(newSelected);
+  };
 
-  // const handleSelectAll = () => {
-  //   if (selectedRows.size === invoices.length) {
-  //     setSelectedRows(new Set());
-  //   } else {
-  //     setSelectedRows(new Set(invoices.map(invoice => invoice.id)));
-  //   }
-  // };
+  const handleSelectAll = () => {
+    if (selectedRows.size === invoices.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(invoices.map(invoice => invoice.id)));
+    }
+  };
 
-  // const filteredInvoices = invoices.filter(invoice =>
-  //   invoice.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //   invoice.tripType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //   invoice.bookingRef.toLowerCase().includes(searchQuery.toLowerCase())
-  // );
+  const filteredInvoices = invoices.filter(invoice =>
+    invoice.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.tripType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    invoice.bookingRef.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Bookings" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
               <div className="bg-[#F7F9FB] rounded-lg border">
-                Hello World How are you doing this fine day? This is a test for the booking page.
                 {/* Table Header */}
-                {/* <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">Bookings</h2>
                     
                     <div className="flex items-center space-x-3">
@@ -158,10 +157,10 @@ export default function Booking() {
                         </kbd>
                     </div>
                     </div>
-                </div> */}
+                </div>
 
                 {/* Table */}
-                {/* <Table>
+                <Table>
                     <TableHeader>
                     <TableRow className="hover:bg-transparent">
                         <TableHead className="w-12">
@@ -232,14 +231,14 @@ export default function Booking() {
                         </TableRow>
                     ))}
                     </TableBody>
-                </Table> */}
+                </Table>
                 
                 {/* View More Button */}
-                {/* <div className="flex justify-center p-4 border-t">
+                <div className="flex justify-center p-4 border-t">
                     <Button variant="outline" className="bg-black text-white hover:bg-gray-800 px-6">
                     View More
                     </Button>
-                </div> */}
+                </div>
               </div>
             </div>
         </AppLayout>

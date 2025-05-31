@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePackageRequest;
 use App\Http\Requests\UpdatePackageRequest;
+use App\Models\Package;
 use App\Services\PackageService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class PackageController extends Controller
 {
     public function __construct(
-        private PackageService $packageService,
-        private ActivityService $activityService
+        private PackageService $packageService
     ) {
-        $this->authorizeResource(Package::class, 'package');
     }
 
     /**
@@ -27,14 +27,16 @@ class PackageController extends Controller
             'search', 'destination', 'price_min', 'price_max', 
             'date_start', 'date_end', 'activities'
         ]);
-        
-        if ($request->has('owner') && $request->user()->hasRole(['agent', 'admin'])) {
-            $packages = $this->packageService->getUserPackages(Auth::user());
-        } else {
-            $packages = $this->packageService->getFilteredPackages($filters);
-        }
 
-        return Inertia::render('Packages/Index', [
+        $packages = $this->packageService->getFilteredPackages($filters);
+        
+        // if ($request->has('owner') && $request->user()->hasRole(['agent', 'admin'])) {
+        //     $packages = $this->packageService->getUserPackages(Auth::user());
+        // } else {
+        //     $packages = $this->packageService->getFilteredPackages($filters);
+        // }
+
+        return Inertia::render('packages/allPackages', [
             'packages' => $packages,
             'filters' => $filters,
         ]);
@@ -47,11 +49,11 @@ class PackageController extends Controller
     {
         $activities = [];
         
-        if (Auth::user()->hasRole('agent')) {
-            $activities = $this->activityService->getAgentActivities(Auth::id());
-        } else if (Auth::user()->hasRole('admin')) {
-            $activities = $this->activityService->getAllActivities();
-        }
+        // if (Auth::user()->hasRole('agent')) {
+        //     $activities = $this->activityService->getAgentActivities(Auth::id());
+        // } else if (Auth::user()->hasRole('admin')) {
+        //     $activities = $this->activityService->getAllActivities();
+        // }
         
         return Inertia::render('Packages/Create', [
             'activities' => $activities,
@@ -97,10 +99,6 @@ class PackageController extends Controller
                     'thumbnail' => $media->getUrl('thumb'),
                 ];
             }),
-            'video' => $package->getFirstMedia('package_videos') ? [
-                'id' => $package->getFirstMedia('package_videos')->id,
-                'url' => $package->getFirstMedia('package_videos')->getUrl(),
-            ] : null,
         ]);
     }
 
@@ -128,10 +126,6 @@ class PackageController extends Controller
                     'thumbnail' => $media->getUrl('thumb'),
                 ];
             }),
-            'video' => $package->getFirstMedia('package_videos') ? [
-                'id' => $package->getFirstMedia('package_videos')->id,
-                'url' => $package->getFirstMedia('package_videos')->getUrl(),
-            ] : null,
         ]);
     }
 
