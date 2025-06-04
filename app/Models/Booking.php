@@ -31,6 +31,7 @@ class Booking extends Model
         'status',
         'access_token',
         'access_token_expires_at',
+        'snapshot',
     ];
 
     protected $casts = [

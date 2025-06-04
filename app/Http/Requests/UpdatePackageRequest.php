@@ -12,9 +12,7 @@ class UpdatePackageRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
-        // $package = $this->route('package');
-        // return $this->user()->hasRole('admin') || 
-        //        ($this->user()->hasRole('agent') && $package->owner_id === $this->user()->id);
+
     }
 
     /**

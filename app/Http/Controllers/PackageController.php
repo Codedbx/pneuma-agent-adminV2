@@ -45,12 +45,15 @@ class PackageController extends Controller
             'date_start'  => '',
             'date_end'    => '',
             'activities'  => '',
-            'sort'        => 'title',
-            'direction'   => 'asc',
+            'sort'        => 'id',
+            'direction'   => 'desc',
         ];
 
         $filters = array_merge($defaults, $incoming);
         $packages = $this->packageService->getFilteredPackages($filters);
+
+
+        Log::info('Filtered packages:', $packages->toArray());
 
         return Inertia::render("packages/index", [
             'packages' => $packages,
@@ -64,12 +67,7 @@ class PackageController extends Controller
     public function create()
     {
         $activities = Activity::all();
-        
-        // if (Auth::user()->hasRole('agent')) {
-        //     $activities = $this->activityService->getAgentActivities(Auth::id());
-        // } else if (Auth::user()->hasRole('admin')) {
-        //     $activities = $this->activityService->getAllActivities();
-        // }
+
         
         return Inertia::render('packages/createPackage', [
             'activities' => $activities,
@@ -126,13 +124,7 @@ class PackageController extends Controller
     public function edit(Package $package)
     {
         $package->load('activities.timeSlots');
-        
-        $activities = [];
-        // if (Auth::user()->hasRole('agent')) {
-        //     $activities = $this->activityService->getAgentActivities(Auth::id());
-        // } else if (Auth::user()->hasRole('admin')) {
-        //     $activities = $this->activityService->getAllActivities();
-        // }
+
         
         $allActivities = Activity::all(['id', 'title', 'price']);
 
@@ -153,6 +145,11 @@ class PackageController extends Controller
      */
     public function update(UpdatePackageRequest $request, Package $package)
     {
+
+        Log::info('Updating package', [
+            'package_id' => $package->id,
+            'request_data' => $request->validated(),
+        ]);
         $package = $this->packageService->updatePackage($package->id, $request->validated());
 
         if ($request->hasFile('package_images')) {

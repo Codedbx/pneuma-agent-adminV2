@@ -28,12 +28,25 @@ class PackageService
     public function createPackage(array $data): Package
     {
         return DB::transaction(function () use ($data) {
-            $payload = $this->mapPackageData($data);
-            $package = $this->packageRepository->create($payload);
 
-            $this->handleActivities($package, $data);
+             $data['owner_id'] = Auth::id();
 
-            return $package->load(['activities', 'media']);
+            // 2) Call the repository.create(...) with the full validated data
+            //    (assuming your model’s $fillable includes 'owner_id')
+            $package = $this->packageRepository->create($data);
+
+            // 3) Sync activities
+            if (isset($data['activities']) && is_array($data['activities'])) {
+                $package->activities()->sync($data['activities']);
+            }
+
+             return $package->load(['activities', 'media']);
+            // $payload = $this->mapPackageData($data);
+            // $package = $this->packageRepository->create($payload);
+
+            // $this->handleActivities($package, $data);
+
+            // return $package->load(['activities', 'media']);
         });
     }
 

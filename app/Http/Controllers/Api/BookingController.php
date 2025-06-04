@@ -27,31 +27,28 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+
+    public function store(StoreBookingRequest $request): JsonResponse
     {
-
-    //public function store(StoreBookingRequest $request): JsonResponse
-        
         try {
+            Log::info('Creating booking with data:', $request->all());
+            $booking = $this->bookingService->createBooking($request->all());
 
-            Log::info('Creating booking', [
-                'package_id' => $request->package_id,
-                'data' => $request->all(),
-            ]);
-            $booking = $this->bookingService->createBooking(
-                $request->package_id,
-                $request->all(),
-            );
+            $paymentGateway = $request->input('payment_gateway'); 
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Booking created successfully',
-                'data' => $booking->load(['package', 'user']),
+                'message' => 'Booking created successfully.',
+                'data' => [
+                    'booking_id' => $booking->id,
+                    'booking_reference' => $booking->booking_reference,
+                    'payment_gateway' => $paymentGateway, 
+                ],
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => 'Failed to create booking. Please try again or contact support. ' . $e->getMessage(),
             ], 400);
         }
     }

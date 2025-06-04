@@ -38,8 +38,6 @@ export default function CreatePackages() {
     location: "",
     agent_addon_price: "",
     agent_price_type: "fixed",
-    check_in_time: "",
-    check_out_time: "",
     booking_start_date: "",
     booking_end_date: "",
     is_active: true,
@@ -68,8 +66,6 @@ export default function CreatePackages() {
     location: 1,
     agent_addon_price: 1,
     agent_price_type: 1,
-    check_in_time: 1,
-    check_out_time: 1,
     images: 2,
     flight_from: 3,
     flight_to: 3,
@@ -100,9 +96,7 @@ export default function CreatePackages() {
           data.base_price &&
           data.location.trim() &&
           data.agent_addon_price &&
-          data.agent_price_type.trim() &&
-          data.check_in_time &&
-          data.check_out_time
+          data.agent_price_type.trim()
         );
       case 2:
         return data.images.length > 0;
@@ -391,42 +385,6 @@ export default function CreatePackages() {
                       )}
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="check_in_time" className="text-sm font-medium text-gray-700">
-                        Check-in Time *
-                      </Label>
-                      <Input
-                        id="check_in_time"
-                        type="time"
-                        value={data.check_in_time}
-                        onChange={e => setData('check_in_time', e.target.value)}
-                        className="w-full"
-                        required
-                      />
-                      {errors.check_in_time && (
-                        <p className="text-sm text-red-600">{errors.check_in_time}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="check_out_time" className="text-sm font-medium text-gray-700">
-                        Check-out Time *
-                      </Label>
-                      <Input
-                        id="check_out_time"
-                        type="time"
-                        value={data.check_out_time}
-                        onChange={e => setData('check_out_time', e.target.value)}
-                        className="w-full"
-                        required
-                      />
-                      {errors.check_out_time && (
-                        <p className="text-sm text-red-600">{errors.check_out_time}</p>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="booking_start_date" className="text-sm font-medium text-gray-700">

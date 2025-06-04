@@ -11,6 +11,7 @@ use App\Models\PlatformSetting;
 use App\Repositories\BookingRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BookingService
 {
@@ -30,6 +31,8 @@ class BookingService
 
     public function createBooking(array $data): Booking
     {
+
+
         return DB::transaction(function () use ($data) {
             $package = Package::with('activities')->findOrFail($data['package_id']);
 
@@ -86,6 +89,7 @@ class BookingService
                     'id'         => $package->id,
                     'title'      => $package->title,
                     'base_price' => $basePrice,
+                    'total_price' => $totalPriceAll,
                 ],
                 'activities'               => $snapshotActivities,
                 'agent_addon_per_person'   => $agentAddonPerPerson,
@@ -95,9 +99,19 @@ class BookingService
                 'group_size'               => $pax,
             ];
 
+            Log::info('Booking snapshot created', [
+                'package_id' => $package->id,
+                'pax_count'  => $pax,
+                'base_price' => $basePrice, 
+                'total_price_all' => $totalPriceAll,
+                'snapshot' => $snapshot,
+            ]);
+
+
+
             // 3) Create the booking record
             $booking = $this->bookingRepository->create([
-                'user_id'                => $data['user_id'] ?? Auth::id(),
+                'user_id'                => Auth::id() ?? null,
                 'guest_first_name'       => $data['guest_first_name'],
                 'guest_last_name'        => $data['guest_last_name'],
                 'guest_email'            => $data['guest_email'],
@@ -115,10 +129,16 @@ class BookingService
                 'total_price_per_person' => $totalPerPerson,
                 'total_price'            => $totalPriceAll,
                 'status'                 => 'pending',
-                'snapshot'               => $snapshot,
+                'snapshot'               => json_encode($snapshot),
             ]);
 
-            event(new BookingCreated($booking));
+
+            if (!$booking instanceof Booking || $booking->id === null) {
+                Log::error('Booking creation failed unexpectedly: Repository did not return a valid Booking instance.');
+                throw new \RuntimeException('Booking record could not be created in the database.');
+            }
+
+            // event(new BookingCreated($booking));
 
             return $booking;
         });

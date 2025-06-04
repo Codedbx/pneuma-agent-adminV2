@@ -28,6 +28,7 @@ class StoreBookingRequest extends FormRequest
             'slots.*.slot_id' => ['required', 'integer', 'exists:activity_time_slots,id'],
             'slots.*.slot_start' => ['required', 'date_format:Y-m-d H:i:s'],
             'slots.*.slot_end' => ['required', 'date_format:Y-m-d H:i:s'],
+            'payment_gateway' => ['nullable', 'string', 'in:stripe,paystack,espees'],
         ];
     }
 
