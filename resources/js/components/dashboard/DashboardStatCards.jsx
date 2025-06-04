@@ -36,12 +36,12 @@ const DashboardStatsCards = () => {
   return (
     <div className="bg-white">
       {/* Time Period Filter */}
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <button className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
           <span>This Year</span>
           <ChevronDown className="h-4 w-4" />
         </button>
-      </div>
+      </div> */}
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

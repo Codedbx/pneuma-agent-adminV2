@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -34,62 +36,84 @@ class User extends Authenticatable implements HasMedia
         'zip_code',
         'email_verified_at',
         'email',
+        'cac_reg_no',
+        'active',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password'          => 'hashed',
+        'active'            => 'boolean',
+    ];
 
-
-     /**
-     * Get the packages for the user (agent).
-     */
     public function packages(): HasMany
     {
         return $this->hasMany(Package::class, 'owner_id');
     }
 
-    /**
-     * Get the activities for the user (agent).
-     */
+
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class, 'agent_id');
     }
 
-    /**
-     * Get the bookings for the user.
-     */
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-     public function registerMediaCollections(): void
+    public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        $this->addMediaCollection('user_images')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+        if (! $term) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($term) {
+            $q->where('name', 'LIKE', "%{$term}%")
+              ->orWhere('email', 'LIKE', "%{$term}%")
+              ->orWhere('business_name', 'LIKE', "%{$term}%");
+        });
     }
-    
+
+    public function scopeByRole(Builder $query, ?string $role): Builder
+    {
+        if (! $role || $role === 'all') {
+            return $query;
+        }
+
+        return $query->whereHas('roles', function (Builder $q) use ($role) {
+            $q->where('name', $role);
+        });
+    }
+
+    public function scopeByStatus(Builder $query, ?string $status): Builder
+    {
+        if ($status === 'active') {
+            return $query->where('active', true);
+        }
+
+        if ($status === 'inactive') {
+            return $query->where('active', false);
+        }
+
+        return $query;
+    }
+
+    public function scopeOrdered(Builder $query, ?string $sortBy, ?string $sortOrder): Builder
+    {
+        $allowed = ['name', 'email', 'business_name',  'created_at'];
+
+        $column = in_array($sortBy, $allowed, true) ? $sortBy : 'name';
+        $dir    = ($sortOrder === 'desc') ? 'desc' : 'asc';
+
+        return $query->orderBy($column, $dir);
+    }
+
 }

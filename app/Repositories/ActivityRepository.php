@@ -13,7 +13,7 @@ class ActivityRepository implements ActivityRepositoryInterface
      public function filter(array $filters = []): Collection|LengthAwarePaginator
     {
         return $this->applyFilters(Activity::query(), $filters)
-            ->with(['timeSlots', 'media'])
+            ->with(['timeSlots'])
             ->get();
     }
 
@@ -22,12 +22,12 @@ class ActivityRepository implements ActivityRepositoryInterface
         return $this->applyFilters(
             Activity::where('agent_id', $agentId),
             $filters
-        )->with(['timeSlots', 'media'])->get();
+        )->with(['timeSlots'])->get();
     }
 
     public function find(int $id): ?Activity
     {
-        return Activity::with(['timeSlots', 'media'])->find($id);
+        return Activity::with(['timeSlots'])->find($id);
     }
 
     public function create(array $data): Activity

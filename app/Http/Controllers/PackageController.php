@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePackageRequest;
 use App\Http\Requests\UpdatePackageRequest;
+use App\Http\Resources\PackageResource;
+use App\Models\Activity;
 use App\Models\Package;
 use App\Services\PackageService;
 use Illuminate\Http\Request;
@@ -23,22 +25,36 @@ class PackageController extends Controller
      */
     public function index(Request $request)
     {
-        $filters = $request->only([
-            'search', 'destination', 'price_min', 'price_max', 
-            'date_start', 'date_end', 'activities'
+        $incoming = $request->only([
+            'search',
+            'destination',
+            'price_min',
+            'price_max',
+            'date_start',
+            'date_end',
+            'activities',
+            'sort',
+            'direction',
         ]);
 
-        $packages = $this->packageService->getFilteredPackages($filters);
-        
-        // if ($request->has('owner') && $request->user()->hasRole(['agent', 'admin'])) {
-        //     $packages = $this->packageService->getUserPackages(Auth::user());
-        // } else {
-        //     $packages = $this->packageService->getFilteredPackages($filters);
-        // }
+        $defaults = [
+            'search'      => '',
+            'destination' => '',
+            'price_min'   => '',
+            'price_max'   => '',
+            'date_start'  => '',
+            'date_end'    => '',
+            'activities'  => '',
+            'sort'        => 'title',
+            'direction'   => 'asc',
+        ];
 
-        return Inertia::render('packages/allPackages', [
+        $filters = array_merge($defaults, $incoming);
+        $packages = $this->packageService->getFilteredPackages($filters);
+
+        return Inertia::render("packages/index", [
             'packages' => $packages,
-            'filters' => $filters,
+            'filters'  => $filters,
         ]);
     }
 
@@ -47,7 +63,7 @@ class PackageController extends Controller
      */
     public function create()
     {
-        $activities = [];
+        $activities = Activity::all();
         
         // if (Auth::user()->hasRole('agent')) {
         //     $activities = $this->activityService->getAgentActivities(Auth::id());
@@ -55,7 +71,7 @@ class PackageController extends Controller
         //     $activities = $this->activityService->getAllActivities();
         // }
         
-        return Inertia::render('Packages/Create', [
+        return Inertia::render('packages/createPackage', [
             'activities' => $activities,
         ]);
     }
@@ -67,14 +83,16 @@ class PackageController extends Controller
     {
         $package = $this->packageService->createPackage($request->validated());
 
-        if ($request->hasFile('package_images')) {
-            foreach ($request->file('package_images') as $image) {
+        Log::info('Package created', [
+            'user_id' => Auth::id(),
+            'package_created' => $package,
+            'request data' => $request->validated(),
+        ]);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
                 $package->addMedia($image)->toMediaCollection('package_images');
             }
-        }
-
-        if ($request->hasFile('package_video')) {
-            $package->addMedia($request->file('package_video'))->toMediaCollection('package_videos');
         }
 
         return redirect()->route('packages.show', $package)
@@ -86,7 +104,7 @@ class PackageController extends Controller
      */
     public function show(Package $package)
     {
-        $package->load(['activities.activity', 'owner']);
+        $package->load(['activities.timeSlots', 'owner']);
         $totalPrice = $this->packageService->calculateTotalPrice($package);
         
         return Inertia::render('Packages/Show', [
@@ -107,25 +125,26 @@ class PackageController extends Controller
      */
     public function edit(Package $package)
     {
-        $package->load('activities.activity');
+        $package->load('activities.timeSlots');
         
         $activities = [];
-        if (Auth::user()->hasRole('agent')) {
-            $activities = $this->activityService->getAgentActivities(Auth::id());
-        } else if (Auth::user()->hasRole('admin')) {
-            $activities = $this->activityService->getAllActivities();
-        }
+        // if (Auth::user()->hasRole('agent')) {
+        //     $activities = $this->activityService->getAgentActivities(Auth::id());
+        // } else if (Auth::user()->hasRole('admin')) {
+        //     $activities = $this->activityService->getAllActivities();
+        // }
         
-        return Inertia::render('Packages/Edit', [
-            'package' => $package,
-            'activities' => $activities,
-            'images' => $package->getMedia('package_images')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getUrl(),
-                    'thumbnail' => $media->getUrl('thumb'),
-                ];
-            }),
+        $allActivities = Activity::all(['id', 'title', 'price']);
+
+        return Inertia::render('packages/editPackage', [
+            'package'    => $package,
+            'images'     => $package->getMedia('package_images')
+                                ->map(fn($media) => [
+                                    'id'        => $media->id,
+                                    'url'       => $media->getUrl(),
+                                    'thumbnail' => $media->getUrl('thumb'),
+                                ]),
+            'allActivities' => $allActivities,
         ]);
     }
 
@@ -140,14 +159,6 @@ class PackageController extends Controller
             foreach ($request->file('package_images') as $image) {
                 $package->addMedia($image)->toMediaCollection('package_images');
             }
-        }
-
-        if ($request->hasFile('package_video')) {
-            // Remove existing video if it exists
-            if ($package->getFirstMedia('package_videos')) {
-                $package->getFirstMedia('package_videos')->delete();
-            }
-            $package->addMedia($request->file('package_video'))->toMediaCollection('package_videos');
         }
 
         if ($request->has('delete_media') && is_array($request->delete_media)) {
@@ -179,7 +190,7 @@ class PackageController extends Controller
      */
     public function toggleFeatured(Package $package)
     {
-        $this->authorize('update', $package);
+        // $this->authorize('update', $package);
         
         $package->is_featured = !$package->is_featured;
         $package->save();
@@ -192,7 +203,7 @@ class PackageController extends Controller
      */
     public function toggleActive(Package $package)
     {
-        $this->authorize('update', $package);
+        // $this->authorize('update', $package);
         
         $package->is_active = !$package->is_active;
         $package->save();

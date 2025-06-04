@@ -18,10 +18,8 @@ return new class extends Migration
             $table->decimal('base_price', 10, 2);
             $table->decimal('agent_addon_price', 10, 2);
             $table->enum('agent_price_type', ['fixed', 'percentage']);
-            $table->datetime('check_in_time');
-            $table->datetime('check_out_time');
-            $table->datetime('booking_start_date');
-            $table->datetime('booking_end_date');
+            $table->date('booking_start_date');
+            $table->date('booking_end_date');
             $table->boolean('is_active')->default(true);
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_refundable')->default(true);
@@ -35,7 +33,7 @@ return new class extends Migration
             $table->string('flight_from')->nullable();
             $table->string('flight_to')->nullable();
             $table->string('airline_name')->nullable();
-            $table->enum('booking_class', ['economy', 'business'])->nullable();
+            $table->string('booking_class')->nullable();
             
             // Hotel details
             $table->string('hotel_name')->nullable();

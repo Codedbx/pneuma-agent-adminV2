@@ -9,6 +9,7 @@ class PaymentGatewayAdapter
     private array $gateways = [
         'stripe' => StripeGateway::class,
         'paystack' => PaystackGateway::class,
+        'espees' => EspeesGateway::class,
     ];
 
     public function make(string $gateway): PaymentGatewayInterface

@@ -5,20 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Activity extends Model implements HasMedia
+
+class Activity extends Model
 {
     /** @use HasFactory<\Database\Factories\ActivityFactory> */
-   use HasFactory, InteractsWithMedia;
+   use HasFactory;
 
     protected $fillable = [
         'agent_id',
         'title',
-        'description',
         'location',
         'price',
     ];
@@ -28,6 +26,12 @@ class Activity extends Model implements HasMedia
         'end_time' => 'datetime',
         'price' => 'decimal:2',
     ];
+
+    public function packages(): BelongsToMany
+    {
+        return $this->belongsToMany(Package::class, 'package_activities', 'activity_id', 'package_id');
+    }
+
 
     public function agent(): BelongsTo
     {
@@ -39,18 +43,4 @@ class Activity extends Model implements HasMedia
         return $this->hasMany(ActivityTimeSlot::class, 'activity_id');
     }
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('activity_images')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
-    }
-
-    public function registerMediaConversions(Media $media = null): void
-    {
-        $this->addMediaConversion('thumb')
-            ->width(200)
-            ->height(150)
-            ->sharpen(10);
-    }
 }

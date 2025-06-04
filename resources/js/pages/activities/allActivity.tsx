@@ -55,14 +55,12 @@ type TimeSlot = {
 type Activity = {
   id: number;
   title: string;
-  description: string;
   location: string;
   price: number; // Changed to number
   time_slots: TimeSlot[]; // Matches Laravel relationship
   agent_id: number;
   created_at: string;
   updated_at: string;
-  media: any[];
 };
 
 export default function AllActivity({ activities: initialActivities }: { activities: Activity[] }) {
@@ -94,7 +92,6 @@ export default function AllActivity({ activities: initialActivities }: { activit
     const filtered = activities.filter((activity) => {
       const matchesSearch =
         activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         activity.location.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (filterStatus === "all") return matchesSearch;
@@ -390,11 +387,8 @@ export default function AllActivity({ activities: initialActivities }: { activit
                             />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{activity.title}</div>
-                              <div className="text-sm text-gray-500 truncate max-w-xs">
-                                {activity.description}
-                              </div>
+                            <div className="flex items-center">
+                              <span className="text-sm text-gray-900 truncate max-w-[100px]">{activity.title}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -406,7 +400,7 @@ export default function AllActivity({ activities: initialActivities }: { activit
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge variant={activity.time_slots.length > 0 ? "default" : "secondary"}>
                               <Clock className="w-3 h-3 mr-1" />
-                              {activity.time_slots.length} slot{activity.time_slots.length !== 1 ? "s" : ""}
+                              {activity.time_slots.length} slot {activity.time_slots.length !== 1 ? "s" : ""}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -565,10 +559,6 @@ export default function AllActivity({ activities: initialActivities }: { activit
                       </div>
 
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Description</span>
-                          <span className="text-sm font-medium truncate max-w-[150px]">{activity.description}</span>
-                        </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Price</span>
                           <span className="text-sm font-medium">{formatPrice(activity.price)}</span>

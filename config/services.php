@@ -43,5 +43,10 @@ return [
     'paystack' => [
         'secret' => env('PAYSTACK_SECRET_KEY'),
     ],
+    
+    'espees' => [
+    'api_key' => env('ESPEES_API_KEY'),
+    'merchant_wallet' => env('ESPEES_MERCHANT_WALLET'),
+],
 
 ];

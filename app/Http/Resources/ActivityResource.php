@@ -17,7 +17,7 @@ class ActivityResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'description' => $this->description,
+            'location' => $this->location,
             'price' => $this->price,
             'time_slots' => TimeSlotResource::collection($this->timeSlots),
         ];

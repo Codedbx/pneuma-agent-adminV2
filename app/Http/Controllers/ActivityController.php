@@ -108,7 +108,6 @@ class ActivityController extends Controller
     {
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
             'location' => 'sometimes|string|max:255',
             'price' => 'sometimes|numeric|min:0',
             'start_time' => 'nullable|date',
@@ -117,12 +116,9 @@ class ActivityController extends Controller
             'time_slots.*.id' => 'sometimes|integer|exists:activity_time_slots,id',
             'time_slots.*.starts_at' => 'required_with:time_slots|date',
             'time_slots.*.ends_at' => 'required_with:time_slots|date|after:time_slots.*.starts_at',
-            'time_slots.*.capacity' => 'required_with:time_slots|integer|min:1',
             'delete_time_slots' => 'nullable|array',
             'delete_time_slots.*' => 'integer|exists:activity_time_slots,id',
             'replace_slots' => 'sometimes|boolean',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $activity = $this->activityService->updateActivity($id, $validated);

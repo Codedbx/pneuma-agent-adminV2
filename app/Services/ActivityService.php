@@ -53,12 +53,7 @@ class ActivityService
                 $this->createTimeSlots($activity, $data['time_slots']);
             }
 
-            // Handle image uploads
-            if (!empty($data['images'])) {
-                $this->addActivityImages($activity, $data['images']);
-            }
-
-            return $activity->load(['timeSlots', 'media']);
+            return $activity->load(['timeSlots']);
         });
     }
 
@@ -76,12 +71,7 @@ class ActivityService
                 $this->updateTimeSlots($activity, $data);
             }
 
-            // Handle image uploads
-            if (isset($data['images'])) {
-                $this->addActivityImages($activity, $data['images']);
-            }
-
-            return $activity->load(['timeSlots', 'media']);
+            return $activity->load(['timeSlots']);
         });
     }
 
@@ -101,7 +91,6 @@ class ActivityService
         return [
             'agent_id' => $data['agent_id'] ?? Auth::id(),
             'title' => $data['title'],
-            'description' => $data['description'],
             'location' => $data['location'],
             'price' => $data['price'],
             'start_time' => $data['start_time'] ?? null,
@@ -117,8 +106,7 @@ class ActivityService
         foreach ($timeSlots as $slotData) {
             $activity->timeSlots()->create([
                 'starts_at' => $slotData['starts_at'],
-                'ends_at' => $slotData['ends_at'],
-                'capacity' => $slotData['capacity']
+                'ends_at' => $slotData['ends_at']
             ]);
         }
     }
@@ -140,14 +128,12 @@ class ActivityService
                 $activity->timeSlots()->where('id', $slotData['id'])->update([
                     'starts_at' => $slotData['starts_at'],
                     'ends_at' => $slotData['ends_at'],
-                    'capacity' => $slotData['capacity']
                 ]);
             } else {
                 // Create new slot
                 $activity->timeSlots()->create([
                     'starts_at' => $slotData['starts_at'],
                     'ends_at' => $slotData['ends_at'],
-                    'capacity' => $slotData['capacity']
                 ]);
             }
         }
@@ -158,13 +144,5 @@ class ActivityService
         }
     }
 
-    /**
-     * Add images to an activity
-     */
-    private function addActivityImages(Activity $activity, array $images): void
-    {
-        foreach ($images as $image) {
-            $activity->addMedia($image)->toMediaCollection('images');
-        }
-    }
+
 }

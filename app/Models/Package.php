@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -20,8 +21,6 @@ class Package extends Model implements HasMedia
         'base_price',
         'agent_addon_price',
         'agent_price_type',
-        'check_in_time',
-        'check_out_time',
         'booking_start_date',
         'booking_end_date',
         'is_active',
@@ -47,10 +46,8 @@ class Package extends Model implements HasMedia
     protected $casts = [
         'base_price' => 'decimal:2',
         'agent_addon_price' => 'decimal:2',
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
-        'booking_start_date' => 'datetime',
-        'booking_end_date' => 'datetime',
+        'booking_start_date' => 'date',
+        'booking_end_date'   => 'date',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'is_refundable' => 'boolean',
@@ -66,10 +63,11 @@ class Package extends Model implements HasMedia
         return $this->belongsTo(User::class, 'owner_id');
     }
 
-    public function activities(): HasMany
+    public function activities(): BelongsToMany
     {
-        return $this->hasMany(PackageActivity::class);
+        return $this->belongsToMany(Activity::class, 'package_activities', 'package_id', 'activity_id');
     }
+
 
     public function bookings(): HasMany
     {
@@ -83,9 +81,6 @@ class Package extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
             ->withResponsiveImages();
             
-        $this->addMediaCollection('package_videos')
-            ->acceptsMimeTypes(['video/mp4', 'video/avi', 'video/mov'])
-            ->singleFile();
     }
 
     public function registerMediaConversions(Media $media = null): void
@@ -153,126 +148,3 @@ class Package extends Model implements HasMedia
     }
 
 }
-
-// namespace App\Models;
-
-// use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Illuminate\Database\Eloquent\Model;
-// use Illuminate\Database\Eloquent\Relations\BelongsTo;
-// use Illuminate\Database\Eloquent\Relations\HasMany;
-// use Illuminate\Database\Eloquent\Relations\HasOne;
-// use Spatie\MediaLibrary\HasMedia;
-// use Spatie\MediaLibrary\InteractsWithMedia;
-// use Spatie\MediaLibrary\MediaCollections\Models\Media;
-
-// class Package extends Model
-// {
-//     /** @use HasFactory<\Database\Factories\PakageFactory> */
-//     use HasFactory, InteractsWithMedia;
-
-//     protected $fillable = [
-//         'title',
-//         'description',
-//         'base_price',
-//         'location',
-//         'owner_id',
-//         'visibility',
-//     ];
-
-//     protected $casts = [
-//         'base_price' => 'decimal:2',
-//         'visibility' => 'string',
-//     ];
-
-//     public function owner(): BelongsTo
-//     {
-//         return $this->belongsTo(User::class, 'owner_id');
-//     }
-
-//     public function activities(): HasMany
-//     {
-//         return $this->hasMany(Activity::class);
-//     }
-
-//     public function addon(): HasOne
-//     {
-//         return $this->hasOne(PackageAddon::class);
-//     }
-
-//     public function bookings(): HasMany
-//     {
-//         return $this->hasMany(Booking::class);
-//     }
-
-//     public function registerMediaCollections(): void
-//     {
-//         $this->addMediaCollection('images')
-//             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
-            
-//         $this->addMediaCollection('videos')
-//             ->acceptsMimeTypes(['video/mp4', 'video/avi', 'video/mov']);
-//     }
-
-//     public function registerMediaConversions(Media $media = null): void
-//     {
-//         $this->addMediaConversion('thumb')
-//             ->width(300)
-//             ->height(200)
-//             ->sharpen(10);
-//     }
-
-//     public function getTotalPriceAttribute(): float
-//     {
-//         $basePrice = $this->base_price;
-        
-//         if ($this->addon) {
-//             if ($this->addon->type === 'fixed') {
-//                 return $basePrice + $this->addon->amount;
-//             } else {
-//                 return $basePrice + ($basePrice * $this->addon->amount / 100);
-//             }
-//         }
-        
-//         return $basePrice;
-//     }
-
-//     public function scopeVisible($query)
-//     {
-//         return $query->where('visibility', 'public');
-//     }
-
-//     public function scopeByLocation($query, string $location)
-//     {
-//         return $query->where('location', 'like', "%{$location}%");
-//     }
-
-//     public function scopeByPriceRange($query, float $min = null, float $max = null)
-//     {
-//         if ($min !== null) {
-//             $query->where('base_price', '>=', $min);
-//         }
-        
-//         if ($max !== null) {
-//             $query->where('base_price', '<=', $max);
-//         }
-        
-//         return $query;
-//     }
-
-//     public function scopeWithActivities($query, array $activityTitles, string $match = 'any')
-//     {
-//         if ($match === 'all') {
-//             foreach ($activityTitles as $title) {
-//                 $query->whereHas('activities', function ($q) use ($title) {
-//                     $q->where('title', 'like', "%{$title}%");
-//                 });
-//             }
-//         } else {
-//             $query->whereHas('activities', function ($q) use ($activityTitles) {
-//                 $q->whereIn('title', $activityTitles);
-//             });
-//         }
-        
-//         return $query;
-//     }
-// }

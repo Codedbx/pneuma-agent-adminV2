@@ -11,12 +11,12 @@ class PackageRepository implements PackageRepositoryInterface
 {
     public function all()
     {
-        return Package::with(['activities.activity.timeSlots', 'owner'])->get();
+        return Package::with(['activities.timeSlots', 'owner'])->get();
     }
 
     public function find(int $id): ?Package
     {
-        $package = Package::with(['activities.activity.timeSlots', 'owner'])
+        $package = Package::with(['media','activities.timeSlots', 'owner'])
                         ->find($id);
 
         Log::info('PackageRepository@find', [
@@ -54,37 +54,43 @@ class PackageRepository implements PackageRepositoryInterface
 
     public function filter(array $filters): LengthAwarePaginator
     {
-        $query = Package::with(['activities.activity.timeSlots', 'owner'])
-            ->visible();
+        $query = Package::with(['media','activities.timeSlots', 'owner'])
+                        ->visible(); 
 
-        // Location filter
-        if (!empty($filters['location'])) {
-            $query->byDestination($filters['location']);
+        if (!empty($filters['destination'])) {
+            $query->where('location', 'like', '%' . $filters['destination'] . '%');
         }
 
-        if (!empty($filters['search_title'])) {
-            $query->searchTitle($filters['search_title']);
+        if (!empty($filters['search'])) {
+            $query->where('title', 'like', '%' . $filters['search'] . '%');
         }
 
-        // Price range filter
-        if (!empty($filters['min_price']) || !empty($filters['max_price'])) {
-            $query->byPriceRange(
-                $filters['min_price'] ?? null,
-                $filters['max_price'] ?? null
-            );
+        if (
+            array_key_exists('price_min', $filters) && $filters['price_min'] !== '' 
+         || array_key_exists('price_max', $filters) && $filters['price_max'] !== ''
+        ) {
+            $min = $filters['price_min'] !== '' ? $filters['price_min'] : 0;
+            $max = $filters['price_max'] !== '' ? $filters['price_max'] : PHP_INT_MAX;
+            $query->whereBetween('base_price', [$min, $max]);
         }
 
-        // Activities filter
-        if (!empty($filters['activities'])) {
-            $match = $filters['activity_match'] ?? 'any';
-            $query->filterByActivityTitles($filters['activities'], $match);
+        if (!empty($filters['activities']) && is_array($filters['activities'])) {
+            $query->whereHas('activities', function ($q) use ($filters) {
+                $q->whereIn('id', $filters['activities']);
+            });
         }
 
-        // Sorting
-        $sortBy = $filters['sort_by'] ?? 'created_at';
-        $sortDir = $filters['sort_dir'] ?? 'desc';
+        if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
+            $query->where('booking_start_date', '<=', $filters['date_end'])
+                  ->where('booking_end_date', '>=',   $filters['date_start']);
+        }
+
+        $sortBy  = $filters['sort']      ?? 'title';
+        $sortDir = $filters['direction'] ?? 'asc';
         $query->orderBy($sortBy, $sortDir);
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        $perPage = $filters['per_page'] ?? 5;
+        return $query->paginate($perPage);
     }
+
 }

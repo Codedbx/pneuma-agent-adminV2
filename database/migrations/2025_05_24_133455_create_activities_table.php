@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
             $table->string('title');
-            $table->text('description');
+            $table->string('location');
             $table->decimal('price', 10, 2);
             
             $table->index(['agent_id', 'title']);
