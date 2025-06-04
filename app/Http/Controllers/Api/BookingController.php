@@ -27,10 +27,10 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
-    {
+    // public function store(Request $request): JsonResponse
+    // {
 
-    //public function store(StoreBookingRequest $request): JsonResponse
+    public function store(StoreBookingRequest $request): JsonResponse{
         
         try {
 
@@ -46,7 +46,10 @@ class BookingController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Booking created successfully',
-                'data' => $booking->load(['package', 'user']),
+                'data' => array_merge(
+                    $booking->load(['package', 'user'])->toArray(),
+                    ['payment_gateway' => $request->payment_gateway] 
+                ),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([

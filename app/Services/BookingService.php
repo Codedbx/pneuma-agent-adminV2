@@ -118,7 +118,7 @@ class BookingService
                 'snapshot'               => $snapshot,
             ]);
 
-            event(new BookingCreated($booking));
+            // event(new BookingCreated($booking));
 
             return $booking;
         });
