@@ -25,8 +25,16 @@ Route::prefix('packages')->group(function () {
 });
 
 //booking end point for guest users and authenticated users
+
+// Route::post('/bookings', function(Request $request) {
+//     return response()->json([
+//         'status' => 'error',
+//         'message' => 'This endpoint is deprecated. Please use the BookingController instead.',
+//         'data' => $request->all(),
+//     ], 410);
+// })->name('api.bookings.store');
 Route::post('/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
-Route::get('/bookings/{id}', [BookingController::class, 'show'])->name('api.bookings.show'); 
+// Route::get('/bookings/{id}', [BookingController::class, 'show'])->name('api.bookings.show'); 
 
 
 // Your existing payment routes

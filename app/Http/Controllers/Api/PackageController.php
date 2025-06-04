@@ -21,46 +21,38 @@ class PackageController extends Controller
         // $this->middleware('role:admin|agent')->except(['index', 'show']);
     }
 
-    public function index(Request $request): JsonResponse
+     public function index(Request $request): JsonResponse
     {
+        // Capture all possible filters from the request, including 'per_page'
         $filters = $request->only([
-            'location',
-            'min_price', 'max_price',
-            'start_date', 'end_date',
-            'sort_by', 'sort_dir',
-            'search_title',
-            'activities', 
-            'activity_match',
-            'per_page',
+            'search',
+            'destination',
+            'price_min',
+            'price_max',
+            'date_start',
+            'date_end',
+            'activities',
+            'sort',
+            'direction',
+            'per_page', 
+            'page',     
         ]);
 
         Log::info('Package filters:', $filters);
 
         $packages = $this->packageService->getFilteredPackages($filters);
 
-    if ($packages->isEmpty()) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'No packages found',
-        ], 404);
-    }
+        // Check if no packages were found after filtering
+        if ($packages->isEmpty() && $packages->total() === 0) { // Check total for true emptiness, as isEmpty() can be true even with a total if it's the last page
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No packages found matching your criteria.', // More specific message
+            ], 404);
+        }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => PackageResource::collection($packages),
-            'meta' => [
-                'current_page' => $packages->currentPage(),
-                'last_page' => $packages->lastPage(),
-                'total' => $packages->total(),
-                'per_page' => $packages->perPage(),
-                'from' => $packages->firstItem(),
-                'to' => $packages->lastItem(),
-            ],
-            'links' => [
-                'next_page_url' => $packages->nextPageUrl(),
-                'prev_page_url' => $packages->previousPageUrl(),
-            ]
-        ]);
+
+        return PackageResource::collection($packages)->response()->setStatusCode(200);
+        
     }
 
      public function store(StorePackageRequest $request): JsonResponse
@@ -77,7 +69,8 @@ class PackageController extends Controller
     {
         $package = $this->packageService->getPackage($id);
 
-        
+        Log::info('Fetching package', ['id' => $id]);
+        Log::info('Package details', ['package' => $package]);
 
         if (!$package) {
             return response()->json([
