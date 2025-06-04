@@ -33,9 +33,9 @@ class Activity extends Model
     }
 
 
-    public function owner(): BelongsTo
+    public function agent(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'agent_id');
+        return $this->belongsTo(User::class);
     }
 
     public function timeSlots(): HasMany

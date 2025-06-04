@@ -28,8 +28,8 @@ class PackageService
     public function createPackage(array $data): Package
     {
         return DB::transaction(function () use ($data) {
-            // $payload = $this->mapPackageData($data);
-            $package = $this->packageRepository->create($data);
+            $payload = $this->mapPackageData($data);
+            $package = $this->packageRepository->create($payload);
 
             $this->handleActivities($package, $data);
 
@@ -82,38 +82,36 @@ class PackageService
         return $agentPrice;
     }
 
-    // private function mapPackageData(array $data): array
-    // {
-    //     return [
-    //         'title'                   => $data['title'],
-    //         'description'             => $data['description'],
-    //         'base_price'              => $data['base_price'],
-    //         'agent_addon_price'       => $data['agent_addon_price'],
-    //         'agent_price_type'        => $data['agent_price_type'],
-    //         'check_in_time'           => $data['check_in_time'],
-    //         'check_out_time'          => $data['check_out_time'],
-    //         'booking_start_date'      => $data['booking_start_date'],
-    //         'booking_end_date'        => $data['booking_end_date'],
-    //         'is_active'               => $data['is_active'] ?? true,
-    //         'is_featured'             => $data['is_featured'] ?? false,
-    //         'is_refundable'           => $data['is_refundable'] ?? true,
-    //         'terms_and_conditions'    => $data['terms_and_conditions'] ?? null,
-    //         'cancellation_policy'     => $data['cancellation_policy'] ?? null,
-    //         'location'             => $data['location'] ?? null,
-    //         'owner_id'                => $data['owner_id'] ?? Auth::id(),
-    //         'visibility'              => $data['visibility'] ?? 'public',
-    //         'flight_from'            => $data['flight_from'] ?? null,   
-    //         'flight_to'              => $data['flight_to'] ?? null,
-    //         'airline_name'           => $data['airline_name'] ?? null,
-    //         'booking_class'          => $data['booking_class'] ?? null,
-    //         'airline_name'           => $data['airline_name'] ?? null,
-    //         'booking_class'          => $data['booking_class'] ?? null,
-    //         'hotel_name'            => $data['hotel_name'] ?? null,
-    //         'hotel_star_rating' => $data['hotel_star_rating'] ?? null,
-    //         'hotel_checkin'        => $data['hotel_checkin'] ?? null,
-    //         'hotel_checkout'       => $data['hotel_checkout'] ?? null,
-    //     ];
-    // }
+    private function mapPackageData(array $data): array
+    {
+        return [
+            'title'                   => $data['title'] ?? null ,
+            'description'             => $data['description'] ?? null,
+            'base_price'              => $data['base_price'] ?? 0.0,
+            'agent_addon_price'       => $data['agent_addon_price'] ?? 0.0,
+            'agent_price_type'        => $data['agent_price_type'],
+            'booking_start_date'      => $data['booking_start_date'],
+            'booking_end_date'        => $data['booking_end_date'],
+            'is_active'               => $data['is_active'] ?? true,
+            'is_featured'             => $data['is_featured'] ?? false,
+            'is_refundable'           => $data['is_refundable'] ?? true,
+            'terms_and_conditions'    => $data['terms_and_conditions'] ?? null,
+            'cancellation_policy'     => $data['cancellation_policy'] ?? null,
+            'location'             => $data['location'] ?? null,
+            'owner_id'                => $data['owner_id'] ?? Auth::id(),
+            'visibility'              => $data['visibility'] ?? 'public',
+            'flight_from'            => $data['flight_from'] ?? null,   
+            'flight_to'              => $data['flight_to'] ?? null,
+            'airline_name'           => $data['airline_name'] ?? null,
+            'booking_class'          => $data['booking_class'] ?? null,
+            'airline_name'           => $data['airline_name'] ?? null,
+            'booking_class'          => $data['booking_class'] ?? null,
+            'hotel_name'            => $data['hotel_name'] ?? null,
+            'hotel_star_rating' => $data['hotel_star_rating'] ?? null,
+            'hotel_checkin'        => $data['hotel_checkin'] ?? null,
+            'hotel_checkout'       => $data['hotel_checkout'] ?? null,
+        ];
+    }
           
     
 
