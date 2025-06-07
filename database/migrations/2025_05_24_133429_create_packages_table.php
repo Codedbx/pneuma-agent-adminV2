@@ -16,8 +16,12 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->decimal('base_price', 10, 2);
+            $table->decimal('total_activities_price', 10, 2);
+            $table->decimal('total_price', 10, 2);
             $table->decimal('agent_addon_price', 10, 2);
             $table->enum('agent_price_type', ['fixed', 'percentage']);
+            $table->decimal('admin_addon_price', 10, 2);
+            $table->enum('admin_price_type', ['fixed', 'percentage']);
             $table->date('booking_start_date');
             $table->date('booking_end_date');
             $table->boolean('is_active')->default(true);

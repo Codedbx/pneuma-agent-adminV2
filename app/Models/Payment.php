@@ -13,10 +13,12 @@ class Payment extends Model
         'gateway',
         'transaction_reference',
         'status',
+        'meta',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'meta'   => 'array',
         'status' => 'string',
     ];
 

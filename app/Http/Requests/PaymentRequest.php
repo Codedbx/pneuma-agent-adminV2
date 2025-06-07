@@ -26,9 +26,10 @@ class PaymentRequest extends FormRequest
             // 'customer_data' => 'required|array',
             // 'customer_data.email' => 'required|email',
             // 'customer_data.name' => 'required|string',
+            'reference' => ['required', 'string', 'max:255'],
             'gateway' => ['required', 'string', 'in:stripe,paystack,espees'],
-            'return_url' => ['required', 'url'],
-            'cancel_url' => ['required', 'url'],
+            'return_url' => ['required', 'string'],
+            'cancel_url' => ['required', 'string'],
         ];
     }
 }

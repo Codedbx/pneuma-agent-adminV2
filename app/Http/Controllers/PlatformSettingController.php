@@ -1,12 +1,17 @@
 <?php
 
+
+
+
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\PlatformSettings\UpdatePlatformSettingRequest;
-use App\Http\Requests\UpdatePlatformSettingRequest as RequestsUpdatePlatformSettingRequest;
+use App\Http\Requests\UpdatePlatformSettingRequest;
 use App\Services\PlatformSettingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class PlatformSettingController extends Controller
 {
@@ -23,12 +28,47 @@ class PlatformSettingController extends Controller
     public function __construct(PlatformSettingService $platformSettingService)
     {
         $this->platformSettingService = $platformSettingService;
-        // $this->middleware('auth:sanctum');
-        // $this->middleware('role:admin');
     }
 
     /**
-     * Get the platform settings.
+     * Show the platform settings form.
+     *
+     * @return Response
+     */
+    public function edit(): Response
+    {
+        $settings = $this->platformSettingService->getSettings();
+        $hasExistingSettings = $settings->exists;
+
+        return Inertia::render('settings/platformSettings', [
+            'settings' => $settings,
+            'hasExistingSettings' => $hasExistingSettings,
+        ]);
+    }
+
+    /**
+     * Update the platform settings.
+     *
+     * @param UpdatePlatformSettingRequest $request
+     * @return RedirectResponse
+     */
+    public function update(UpdatePlatformSettingRequest $request): RedirectResponse
+    {
+        try {
+            $settings = $this->platformSettingService->updateSettings($request->validated());
+
+            return redirect()
+                ->route('settings.platform')
+                ->with('success', 'Platform settings updated successfully');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('settings.platform')
+                ->with('error', 'Failed to update platform settings. Please try again.');
+        }
+    }
+
+    /**
+     * Get the platform settings (API endpoint).
      *
      * @return JsonResponse
      */
@@ -43,12 +83,12 @@ class PlatformSettingController extends Controller
     }
 
     /**
-     * Update the platform settings.
+     * Update the platform settings (API endpoint).
      *
      * @param UpdatePlatformSettingRequest $request
      * @return JsonResponse
      */
-    public function updateSettings(RequestsUpdatePlatformSettingRequest $request): JsonResponse
+    public function updateSettings(UpdatePlatformSettingRequest $request): JsonResponse
     {
         $settings = $this->platformSettingService->updateSettings($request->validated());
 

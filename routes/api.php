@@ -18,11 +18,10 @@ Route::get('/user', function (Request $request) {
 Route::prefix('packages')->group(function () {
     Route::get('/', [PackageController::class, 'index']);
     Route::get('/{id}', [PackageController::class, 'show']);
-    Route::post('/', [PackageController::class, 'store']);
-    Route::put('/{id}', [PackageController::class, 'update']);
-    Route::delete('/{id}', [PackageController::class, 'destroy']);
-    Route::post('/{id}/calculate-price', [PackageController::class, 'calculatePrice']);
+    Route::get('/featured', [PackageController::class, 'randomFeatured']);
 });
+
+Route::get('agent/packages', [PackageController::class, 'userPackages']);
 
 //booking end point for guest users and authenticated users
 Route::post('/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
@@ -30,7 +29,7 @@ Route::get('/bookings/{id}', [BookingController::class, 'show'])->name('api.book
 
 
 // Your existing payment routes
-Route::post('initiate/{bookingRef}', [PaymentController::class, 'initiate']);
+Route::post('pay/initiate', [PaymentController::class, 'initiate']);
 Route::get('verify/{reference}', [PaymentController::class, 'verify']);
 Route::post('webhook', [PaymentController::class, 'webhook']);
 
@@ -39,18 +38,7 @@ Route::get('espees/success', [PaymentController::class, 'espeesSuccess'])->name(
 Route::get('espees/failed', [PaymentController::class, 'espeesFailed'])->name('payment.espees.failed');
 
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/bookings', [BookingController::class, 'index'])->name('api.bookings.index');
 
-    Route::middleware('role:admin')->group(function () {
-        Route::patch('/bookings/{id}/confirm', [BookingController::class, 'confirm'])->name('api.bookings.confirm');
-    });
-
-    Route::patch('/bookings/{id}/cancel', [BookingController::class, 'cancel'])->name('api.bookings.cancel');
-
-    // Example of a route requiring a specific permission (e.g., if 'confirm bookings' is a permission, not just an admin role)
-    // Route::patch('/bookings/{id}/confirm', [BookingController::class, 'confirm'])->name('api.bookings.confirm.permission')->middleware('permission:confirm bookings');
-});
 
 
 

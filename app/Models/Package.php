@@ -19,6 +19,10 @@ class Package extends Model implements HasMedia
         'title',
         'description',
         'base_price',
+        'total_activities_price',
+        'total_price',
+        'admin_addon_price',
+        'admin_price_type',
         'agent_addon_price',
         'agent_price_type',
         'booking_start_date',
@@ -43,8 +47,12 @@ class Package extends Model implements HasMedia
         'hotel_checkout',
     ];
 
+
     protected $casts = [
         'base_price' => 'decimal:2',
+        'total_activities_price' => 'decimal:2',
+        'total_price' => 'decimal:2',
+        'admin_addon_price' => 'decimal:2',
         'agent_addon_price' => 'decimal:2',
         'booking_start_date' => 'date',
         'booking_end_date'   => 'date',
@@ -125,6 +133,13 @@ class Package extends Model implements HasMedia
         return $query->where('booking_start_date', '<=', $end)
             ->where('booking_end_date', '>=', $start);
     }
+
+    public function scopeRandomFeatured($query)
+    {
+        return $query->where('is_featured', true)
+                    ->inRandomOrder();
+    }
+
 
     public function scopeFilterByActivityTitles($query, array $titles, string $match = 'any')
     {

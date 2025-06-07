@@ -6,6 +6,7 @@ use App\Adapters\EspeesGateway;
 use App\Adapters\PaymentGatewayAdapter;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\PlatformSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,52 +18,138 @@ class PaymentService
         private PaymentGatewayAdapter $gatewayFactory
     ) {}
 
-    public function initiate(Booking $booking, array $data): Payment
-    {
-        return DB::transaction(function () use ($booking, $data) {
-            $gateway = $this->gatewayFactory->make($data['gateway']);
-            $reference = Str::uuid()->toString();
+    // public function initiate(Booking $booking, array $data): Payment
+    // {
+    //     return DB::transaction(function () use ($booking, $data) {
+    //         $gateway = $this->gatewayFactory->make($data['gateway']);
+    //         $reference = Str::uuid()->toString();
 
-            $payment = Payment::create([
-                'booking_id' => $booking->id,
-                'amount' => $booking->total_price,
-                'gateway' => $data['gateway'],
-                'transaction_reference' => $reference,
-                'status' => 'pending',
-                'meta' => [
-                    'return_url' => $data['return_url'],
-                    'cancel_url' => $data['cancel_url'],
+    //         $payment = Payment::create([
+    //             'booking_id' => $booking->id,
+    //             'amount' => $booking->total_price,
+    //             'gateway' => $data['gateway'],
+    //             'transaction_reference' => $reference,
+    //             'status' => 'pending',
+    //             'meta' => [
+    //                 'return_url' => $data['return_url'],
+    //                 'cancel_url' => $data['cancel_url'],
+    //             ],
+    //         ]);
+
+    //         try {
+    //             $result = $gateway->initialize([
+    //                 'email' => "emmanuel.gita@gmail.com",
+    //                 'amount' => $booking->total_price * 100,
+    //                 'currency' => 'NGN',
+    //                 'reference' => $reference,
+    //                 'metadata' => [
+    //                     'booking_reference' => $booking->reference,
+    //                     'customer_name' => $booking->customer_name,
+    //                 ],
+    //                 'return_url' => $data['return_url'],
+    //                 'cancel_url' => $data['cancel_url'],
+    //             ]);
+    //             Log::info('Payment gateway initialization result', [
+    //                 'gateway' => $data['gateway'],
+    //                 'reference' => $reference,
+    //                 'result' => $result,
+    //             ]);
+
+    //             $payment->update([
+    //                 'meta' => array_merge($payment->meta, [
+    //                     'checkout_url' => $result['checkout_url'],
+    //                     'gateway_reference' => $result['gateway_reference'] ?? null,
+    //                 ]),
+    //             ]);
+
+    //             return $payment;
+    //         } catch (\Exception $e) {
+    //             $payment->update(['status' => 'failed']);
+    //             throw $e;
+    //         }
+    //     });
+    // }
+
+    public function initiate(Booking $booking, array $data): Payment
+{
+    return DB::transaction(function () use ($booking, $data) {
+        $gateway = $this->gatewayFactory->make($data['gateway']);
+        $reference = Str::uuid()->toString();
+        
+        // Get platform settings for currency conversion
+        $platformSettings = PlatformSetting::first();
+        
+        $convertedAmount = $booking->total_price;
+        $currency = 'USD';
+        
+        if (strtolower($data['gateway']) === 'espees') {
+            // For Espees, divide by espees_rate
+            $convertedAmount = (float)($booking->total_price * $platformSettings->espees_rate);
+            $currency = 'ESP';
+        } elseif (strtolower($data['gateway']) === 'paystack') {
+            // For Paystack, divide by naira_rate
+            $convertedAmount = (float)($booking->total_price * $platformSettings->naira_rate);
+            $currency = 'NGN';
+        }
+        $gatewayAmount = $convertedAmount * 100;
+        
+
+        $payment = Payment::create([
+            'booking_id' => $booking->id,
+            'amount' => $booking->total_price,
+            'gateway' => $data['gateway'],
+            'transaction_reference' => $reference,
+            'status' => 'pending',
+            'meta' => [
+                'return_url' => $data['return_url'],
+                'cancel_url' => $data['cancel_url'],
+                'original_amount' => $booking->total_price,
+                'converted_amount' => $gatewayAmount,
+                'currency' => $currency,
+            ],
+        ]);
+
+        try {
+            $result = $gateway->initialize([
+                'email' => "emmanuel.gita@gmail.com",
+                'amount' => $gatewayAmount,
+                'currency' => $currency,
+                'reference' => $reference,
+                'metadata' => [
+                    'booking_reference' => $booking->reference,
+                    'customer_name' => $booking->customer_name,
+                    'original_amount' => $booking->total_price,
+                    'converted_amount' => $convertedAmount,
                 ],
+                'return_url' => $data['return_url'],
+                'cancel_url' => $data['cancel_url'],
+            ]);
+            
+            Log::info('Payment gateway initialization result', [
+                'gateway' => $data['gateway'],
+                'reference' => $reference,
+                'original_amount' => $booking->total_price,
+                'converted_amount' => $convertedAmount,
+                'gateway_amount' => $gatewayAmount,
+                'currency' => $currency,
+                'result' => $result,
+                'platform' => $platformSettings,
             ]);
 
-            try {
-                $result = $gateway->initialize([
-                    'amount' => $booking->total_price * 100, // Convert to smallest currency unit
-                    'currency' => 'USD',
-                    'reference' => $reference,
-                    'email' => $booking->customer_email,
-                    'metadata' => [
-                        'booking_reference' => $booking->reference,
-                        'customer_name' => $booking->customer_name,
-                    ],
-                    'return_url' => $data['return_url'],
-                    'cancel_url' => $data['cancel_url'],
-                ]);
+            $payment->update([
+                'meta' => array_merge($payment->meta, [
+                    'checkout_url' => $result['checkout_url'],
+                    'gateway_reference' => $result['gateway_reference'] ?? null,
+                ]),
+            ]);
 
-                $payment->update([
-                    'meta' => array_merge($payment->meta, [
-                        'checkout_url' => $result['checkout_url'],
-                        'gateway_reference' => $result['gateway_reference'] ?? null,
-                    ]),
-                ]);
-
-                return $payment;
-            } catch (\Exception $e) {
-                $payment->update(['status' => 'failed']);
-                throw $e;
-            }
-        });
-    }
+            return $payment;
+        } catch (\Exception $e) {
+            $payment->update(['status' => 'failed']);
+            throw $e;
+        }
+    });
+}
 
     public function verify(string $reference): array
     {

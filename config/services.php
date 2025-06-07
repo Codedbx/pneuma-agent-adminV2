@@ -45,8 +45,21 @@ return [
     ],
     
     'espees' => [
-    'api_key' => env('ESPEES_API_KEY'),
-    'merchant_wallet' => env('ESPEES_MERCHANT_WALLET'),
-],
+        'api_key' => env('ESPEES_API_KEY'),
+        'merchant_wallet' => env('ESPEES_MERCHANT_WALLET'),
+    ],
+    'vonage' => [
+        'key'    => env('VONAGE_KEY'),
+        'secret' => env('VONAGE_SECRET'),
+        'sms_from' => env('VONAGE_SMS_FROM', 'OurTravelCo'),
+    ],
+
+    'nexmo' => [
+        'key' => env('NEXMO_KEY'),
+        'secret' => env('NEXMO_SECRET'),
+        'sms_from' => env('NEXMO_SMS_FROM'),
+    ],
+
+
 
 ];

@@ -65,10 +65,7 @@ const footerNavItems: NavItem[] = [
         icon: Calendar,
         key: "bookings",
         items: [
-        { title: "All Bookings", href: "/booking/all" },
-        { title: "Pending", href: "/booking?status=pending" },
-        { title: "Confirmed", href: "/booking?status=confirmed" },
-        { title: "Cancelled", href: "/booking?status=cancelled" },
+        { title: "All Bookings", href: "/bookings/all" },
         ],
     },
     {
@@ -78,8 +75,6 @@ const footerNavItems: NavItem[] = [
         items: [
         { title: "All Invoices", href: "/invoice/all" },
         { title: "Paid", href: "/invoice?status=paid" },
-        { title: "Pending", href: "/invoice?status=pending" },
-        { title: "Overdue", href: "/invoice?status=overdue" },
         ],
     },
     {
@@ -119,6 +114,12 @@ const footerNavItems: NavItem[] = [
         { title: "All Roles", href: "/roles/all" },
         { title: "Create Role", href: "/roles/create" },
       ],
+    },
+
+    {
+      title: "Platform Adon/Rates",
+      icon: LayoutGrid,
+      href:"/settings/platform"
     },
    
   ]

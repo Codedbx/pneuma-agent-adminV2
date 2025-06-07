@@ -31,11 +31,14 @@ class PackageController extends Controller
             'price_max',
             'date_start',
             'date_end',
+            'check_in_start',
+            'check_in_end',
             'activities',
             'sort',
             'direction',
             'per_page', 
-            'page',     
+            'page',  
+            'hotel_rating',   
         ]);
 
         Log::info('Package filters:', $filters);
@@ -53,6 +56,17 @@ class PackageController extends Controller
 
         return PackageResource::collection($packages)->response()->setStatusCode(200);
         
+    }
+
+     public function randomFeatured(Request $request): JsonResponse
+    {
+        $limit = (int) $request->query('limit', 10);
+        $packages = $this->packageService->getRandomFeaturedPackages($limit);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => PackageResource::collection($packages),
+        ], 200);
     }
 
      public function store(StorePackageRequest $request): JsonResponse
@@ -85,57 +99,22 @@ class PackageController extends Controller
         ]);
     }
 
-    public function update(UpdatePackageRequest $request, $id): JsonResponse
-    {
-        $package = $this->packageService->updatePackage($id, $request->validated());
 
-        if (!$package) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Package not found',
-            ], 404);
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => new PackageResource($package),
-        ]);
-    }
+  public function userPackages(Request $request): JsonResponse
+   {
+    // Validate that user_id is provided and is numeric
+    $request->validate([
+        'userId' => 'required|integer|exists:users,id'
+    ]);
 
-    public function destroy($id): JsonResponse
-    {
-        $success = $this->packageService->deletePackage($id);
 
-        if (!$success) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Package not found',
-            ], 404);
-        }
+    $packages = $this->packageService->getUserPackages($request->userId);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Package deleted successfully',
-        ]);
-    }
-
-    public function userPackages(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthenticated',
-            ], 401);
-        }
-
-        $packages = $this->packageService->getUserPackages($user);
-
-        return response()->json([
-            'status' => 'success',
-            'data' => PackageResource::collection($packages),
-        ]);
-    }
+    return response()->json([
+        'status' => 'success',
+        'data' => PackageResource::collection($packages),
+    ]);
+   }
 
 }

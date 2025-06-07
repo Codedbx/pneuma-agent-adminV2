@@ -18,9 +18,9 @@ class PaymentController extends Controller
         private PaymentService $paymentService
     ) {}
 
-    public function initiate(PaymentRequest $request, string $bookingRef): JsonResponse
+    public function initiate(PaymentRequest $request): JsonResponse
     {
-        $booking = Booking::where('reference', $bookingRef)->firstOrFail();
+        $booking = Booking::where('booking_reference', $request->reference)->firstOrFail();
 
         if ($booking->status !== 'pending') {
             return response()->json([

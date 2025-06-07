@@ -14,19 +14,19 @@ export interface Activity {
 }
 
 export interface Package {
-  id: number;
+
   title: string;
   description: string;
   base_price: string;
+  location: string;
   agent_addon_price: string;
-  agent_price_type: string;
-  check_in_time: string;
-  check_out_time: string;
+  agent_price_type: 'fixed' | 'percentage';
   booking_start_date: string;
   booking_end_date: string;
   is_active: boolean;
   is_featured: boolean;
   is_refundable: boolean;
+  visibility: 'public' | 'private';
   terms_and_conditions: string;
   cancellation_policy: string;
   flight_from: string;
@@ -37,14 +37,41 @@ export interface Package {
   hotel_star_rating: string;
   hotel_checkin: string;
   hotel_checkout: string;
-  location: string;
-  owner: Owner;
-  visibility: string;
-  activities_count: number;
-  media: Media[];
-  activities: Activity[];
-  created_at: string;
-  updated_at: string;
+  activities: number[];  
+  images: File[];         
+  [key: string]: any;     
+  // id: number;
+  // title: string;
+  // description: string;
+  // base_price: string;
+  // agent_addon_price: string;
+  // agent_price_type: string;
+  // check_in_time: string;
+  // check_out_time: string;
+  // booking_start_date: string;
+  // booking_end_date: string;
+  // is_active: boolean;
+  // is_featured: boolean;
+  // is_refundable: boolean;
+  // terms_and_conditions: string;
+  // cancellation_policy: string;
+  // flight_from: string;
+  // flight_to: string;
+  // airline_name: string;
+  // booking_class: string;
+  // hotel_name: string;
+  // hotel_star_rating: string;
+  // hotel_checkin: string;
+  // hotel_checkout: string;
+  // location: string;
+  // owner: Owner;
+  // visibility: string;
+  // activities_count: number;
+  // media: Media[];
+  // activities: Activity[];
+  // created_at: string;
+  // updated_at: string;
+  
 }
 
 interface Owner {

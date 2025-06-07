@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
  use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\PlatformSettingController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -14,9 +17,14 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+
+     Route::get('/settings/platform', [PlatformSettingController::class, 'edit'])
+         ->name('settings.platform');
+         
+    Route::put('/settings/platform', [PlatformSettingController::class, 'update'])
+         ->name('settings.platform.update');
+
+    Route::get('/dashboard', [AnalyticsController::class, 'index'])->name('dashboard');
 
 
     Route::get('/activities/all', [ActivityController::class, 'index'])->name('activities.index');
@@ -57,6 +65,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggleActive');
     Route::post('users/{user}/remove-media/{type}', [UserController::class, 'removeMedia'])
         ->name('users.removeMedia');
+
+
+    Route::get('bookings/all', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('bookings/{id}', [BookingController::class, 'show'])->name('bookings.show');
+
 
 
 

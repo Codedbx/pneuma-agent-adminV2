@@ -53,7 +53,7 @@ class PackageController extends Controller
         $packages = $this->packageService->getFilteredPackages($filters);
 
 
-        Log::info('Filtered packages:', $packages->toArray());
+        // Log::info('Filtered packages:', $packages->toArray());
 
         return Inertia::render("packages/index", [
             'packages' => $packages,
@@ -71,21 +71,17 @@ class PackageController extends Controller
         
         return Inertia::render('packages/createPackage', [
             'activities' => $activities,
+            'flash' => [
+            'success' => session('success'),
+        ],
         ]);
     }
 
-    /**
-     * Store a newly created package in storage.
-     */
+    
     public function store(StorePackageRequest $request)
     {
-        $package = $this->packageService->createPackage($request->validated());
-
-        Log::info('Package created', [
-            'user_id' => Auth::id(),
-            'package_created' => $package,
-            'request data' => $request->validated(),
-        ]);
+        $validated = $request->validated();
+        $package = $this->packageService->createPackage($validated);
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
@@ -93,9 +89,62 @@ class PackageController extends Controller
             }
         }
 
-        return redirect()->route('packages.show', $package)
-            ->with('success', 'Package created successfully.');
+        return redirect()->route('packages.index')
+                         ->with('success', 'Package created successfully.');
     }
+
+    public function edit(Package $package)
+    {
+        $package->load('activities');
+
+        $allActivities = Activity::all(['id', 'title', 'price']);
+        $images = $package->getMedia('package_images')->map(fn($m) => [
+            'id'        => $m->id,
+            'url'       => $m->getUrl(),
+            'thumbnail' => $m->getUrl('thumb'),
+        ]);
+
+        return Inertia::render('packages/editPackage', [
+            'package'       => $package,
+            'allActivities' => $allActivities,
+            'images'        => $images,
+            'flash' => [
+            'success' => session('success'),
+        ],
+        ]);
+    }
+
+    public function update(UpdatePackageRequest $request, Package $package)
+    {
+        $validated = $request->all();
+
+        
+        $updated   = $this->packageService->updatePackage($package->id, $validated);
+
+        // Handle newly‐uploaded images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $updated->addMedia($image)->toMediaCollection('package_images');
+            }
+        }
+
+        // Handle deletions
+        if (!empty($validated['delete_media']) && is_array($validated['delete_media'])) {
+            foreach ($validated['delete_media'] as $mediaId) {
+                $media = $updated->media()->find($mediaId);
+                if ($media) {
+                    $media->delete();
+                }
+            }
+        }
+
+        return redirect()->route('packages.index')
+                         ->with('success', 'Package updated successfully.');
+    }
+
+    
+
+   
 
     /**
      * Display the specified package.
@@ -103,11 +152,9 @@ class PackageController extends Controller
     public function show(Package $package)
     {
         $package->load(['activities.timeSlots', 'owner']);
-        $totalPrice = $this->packageService->calculateTotalPrice($package);
         
         return Inertia::render('Packages/Show', [
             'package' => $package,
-            'totalPrice' => $totalPrice,
             'images' => $package->getMedia('package_images')->map(function ($media) {
                 return [
                     'id' => $media->id,
@@ -118,69 +165,16 @@ class PackageController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified package.
-     */
-    public function edit(Package $package)
-    {
-        $package->load('activities.timeSlots');
 
-        
-        $allActivities = Activity::all(['id', 'title', 'price']);
 
-        return Inertia::render('packages/editPackage', [
-            'package'    => $package,
-            'images'     => $package->getMedia('package_images')
-                                ->map(fn($media) => [
-                                    'id'        => $media->id,
-                                    'url'       => $media->getUrl(),
-                                    'thumbnail' => $media->getUrl('thumb'),
-                                ]),
-            'allActivities' => $allActivities,
-        ]);
-    }
-
-    /**
-     * Update the specified package in storage.
-     */
-    public function update(UpdatePackageRequest $request, Package $package)
-    {
-
-        Log::info('Updating package', [
-            'package_id' => $package->id,
-            'request_data' => $request->validated(),
-        ]);
-        $package = $this->packageService->updatePackage($package->id, $request->validated());
-
-        if ($request->hasFile('package_images')) {
-            foreach ($request->file('package_images') as $image) {
-                $package->addMedia($image)->toMediaCollection('package_images');
-            }
-        }
-
-        if ($request->has('delete_media') && is_array($request->delete_media)) {
-            foreach ($request->delete_media as $mediaId) {
-                $media = $package->media()->find($mediaId);
-                if ($media) {
-                    $media->delete();
-                }
-            }
-        }
-
-        return redirect()->route('packages.show', $package)
-            ->with('success', 'Package updated successfully.');
-    }
-
-    /**
-     * Remove the specified package from storage.
-     */
     public function destroy(Package $package)
     {
         $this->packageService->deletePackage($package->id);
-        
         return redirect()->route('packages.index')
-            ->with('success', 'Package deleted successfully.');
+                         ->with('success', 'Package deleted successfully.');
     }
+
+   
 
     /**
      * Toggle the featured status of a package.

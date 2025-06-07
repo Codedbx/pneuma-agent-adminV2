@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Activity;
 use App\Models\Package;
 use App\Models\PlatformSetting;
 use App\Repositories\PackageRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -25,42 +27,77 @@ class PackageService
         return $this->packageRepository->find($id);
     }
 
+    
     public function createPackage(array $data): Package
     {
         return DB::transaction(function () use ($data) {
+            $data['owner_id'] = Auth::id();
 
-             $data['owner_id'] = Auth::id();
+            // Compute totals now:
+            $calculated = $this->calculateTotals($data);
+            $data = array_merge($data, $calculated);
 
-            // 2) Call the repository.create(...) with the full validated data
-            //    (assuming your model’s $fillable includes 'owner_id')
             $package = $this->packageRepository->create($data);
 
-            // 3) Sync activities
-            if (isset($data['activities']) && is_array($data['activities'])) {
+            // Sync activities if provided
+            if (!empty($data['activities']) && is_array($data['activities'])) {
                 $package->activities()->sync($data['activities']);
             }
 
-             return $package->load(['activities', 'media']);
-            // $payload = $this->mapPackageData($data);
-            // $package = $this->packageRepository->create($payload);
-
-            // $this->handleActivities($package, $data);
-
-            // return $package->load(['activities', 'media']);
+            return $package->load(['activities', 'media']);
         });
     }
 
-    public function updatePackage($id, array $data): Package
+    /**
+     * When updating, recalc only if base_price or activities change.
+     */
+    public function updatePackage(int $id, array $data): Package
     {
         return DB::transaction(function () use ($id, $data) {
-            // $payload = $this->mapPackageData($data);
+            $original = $this->packageRepository->find($id);
+            if (! $original) {
+                throw new \Exception("Package not found");
+            }
+
+            $needsRecalc = false;
+
+            // 1) Did base_price change?
+            if (isset($data['base_price']) && $data['base_price'] != $original->base_price) {
+                $needsRecalc = true;
+            }
+
+            // 2) Did activities change? (compare sorted arrays of IDs)
+            if (
+                isset($data['activities']) &&
+                is_array($data['activities'])
+            ) {
+                $origIds = $original->activities->pluck('id')->sort()->values()->toArray();
+                $newIds  = collect($data['activities'])->map(fn($x) => (int)$x)->sort()->values()->toArray();
+                if ($origIds !== $newIds) {
+                    $needsRecalc = true;
+                }
+            }
+
+            // Recalculate totals if needed
+            if ($needsRecalc) {
+                $calculated = $this->calculateTotals($data);
+                $data = array_merge($data, $calculated);
+            }
+
+            // Update the package record
             $updated = $this->packageRepository->update($id, $data);
 
-            $this->handleActivities($updated, $data);
+            // Sync activities if provided
+            if (!empty($data['activities']) && is_array($data['activities'])) {
+                $updated->activities()->sync($data['activities']);
+            }
 
             return $updated->load(['activities', 'media']);
         });
     }
+
+
+    
 
     public function deletePackage($id): bool
     {
@@ -72,71 +109,61 @@ class PackageService
         return $this->packageRepository->filter($filters);
     }
 
-    public function getUserPackages($user)
+    public function getUserPackages($id)
     {
-        return $this->packageRepository->getByOwner($user->id);
-    }
-
-    public function calculateTotalPrice(Package $package): float
-    {
-        $subtotal = $package->base_price + $package->activities->sum('price');
-        $settings = PlatformSetting::first();
-
-        $agentPrice = $package->agent_price_type === 'fixed'
-            ? $subtotal + $package->agent_addon_price
-            : $subtotal * (1 + $package->agent_addon_price / 100);
-
-        if ($settings) {
-            return $settings->admin_addon_type === 'fixed'
-                ? $agentPrice + $settings->admin_addon_amount
-                : $agentPrice * (1 + $settings->admin_addon_amount / 100);
-        }
-
-        return $agentPrice;
-    }
-
-    private function mapPackageData(array $data): array
-    {
-        return [
-            'title'                   => $data['title'] ?? null ,
-            'description'             => $data['description'] ?? null,
-            'base_price'              => $data['base_price'] ?? 0.0,
-            'agent_addon_price'       => $data['agent_addon_price'] ?? 0.0,
-            'agent_price_type'        => $data['agent_price_type'],
-            'booking_start_date'      => $data['booking_start_date'],
-            'booking_end_date'        => $data['booking_end_date'],
-            'is_active'               => $data['is_active'] ?? true,
-            'is_featured'             => $data['is_featured'] ?? false,
-            'is_refundable'           => $data['is_refundable'] ?? true,
-            'terms_and_conditions'    => $data['terms_and_conditions'] ?? null,
-            'cancellation_policy'     => $data['cancellation_policy'] ?? null,
-            'location'             => $data['location'] ?? null,
-            'owner_id'                => $data['owner_id'] ?? Auth::id(),
-            'visibility'              => $data['visibility'] ?? 'public',
-            'flight_from'            => $data['flight_from'] ?? null,   
-            'flight_to'              => $data['flight_to'] ?? null,
-            'airline_name'           => $data['airline_name'] ?? null,
-            'booking_class'          => $data['booking_class'] ?? null,
-            'airline_name'           => $data['airline_name'] ?? null,
-            'booking_class'          => $data['booking_class'] ?? null,
-            'hotel_name'            => $data['hotel_name'] ?? null,
-            'hotel_star_rating' => $data['hotel_star_rating'] ?? null,
-            'hotel_checkin'        => $data['hotel_checkin'] ?? null,
-            'hotel_checkout'       => $data['hotel_checkout'] ?? null,
-        ];
+        return $this->packageRepository->getByOwner($id);
     }
           
+     public function getRandomFeaturedPackages(int $limit = 10): Collection
+    {
+        return $this->packageRepository->getRandomFeatured($limit);
+    }
     
 
-    private function handleActivities(Package $package, array $data): void
+
+
+    
+    private function calculateTotals(array $data): array
     {
-        if (isset($data['activities']) && is_array($data['activities'])) {
-            Log::info('Syncing activities for package', [
-                'request_data' => $data,
-                'activities' => $data['activities'],
-            ]);
-            $package->activities()->sync($data['activities']);
+        // 1) Sum up activity prices
+        $activityTotal = 0.0;
+        if (!empty($data['activities']) && is_array($data['activities'])) {
+            $prices = Activity::whereIn('id', $data['activities'])
+                        ->pluck('price')
+                        ->map(fn($p) => (float)$p)
+                        ->toArray();
+            $activityTotal = array_sum($prices);
         }
+
+        $base = isset($data['base_price']) ? (float)$data['base_price'] : 0.0;
+
+        $adminAddonPrice = 0.0;
+        $adminPriceType  = 'fixed';
+
+        if ($adminPriceType === 'percentage') {
+            $adminAddonPrice = ($base + $activityTotal) * ($adminAddonPrice / 100);
+        }
+
+        // 4) Agent addon
+        $agentAddon = (float) ($data['agent_addon_price'] ?? 0.0);
+        $agentAddonPrice = 0.0;
+        if (($data['agent_price_type'] ?? 'fixed') === 'percentage') {
+            $agentAddonPrice = ($base + $activityTotal) * ($agentAddon / 100);
+        } else {
+            $agentAddonPrice = $agentAddon;
+        }
+
+        // 5) Final total: base + activityTotal + adminAddonPrice + agentAddonPrice
+        $total = $base + $activityTotal + $adminAddonPrice + $agentAddonPrice;
+
+        return [
+            'total_activities_price' => round($activityTotal, 2),
+            'admin_addon_price'      => round($adminAddonPrice, 2),
+            'admin_price_type'       => $adminPriceType,
+            'agent_addon_price'      => round($agentAddonPrice, 2),
+            'agent_price_type'       => $data['agent_price_type'] ?? 'fixed',
+            'total_price'            => round($total, 2),
+        ];
     }
 
 }

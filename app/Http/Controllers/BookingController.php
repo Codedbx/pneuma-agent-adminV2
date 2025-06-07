@@ -3,133 +3,113 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookingRequest;
-use App\Models\Booking;
+use App\Http\Resources\BookingResource;
 use App\Services\BookingService;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class BookingController extends Controller
 {
-    public function __construct(
-        private BookingService $bookingService
-    ) {
-        // $this->middleware('auth:sanctum');
+    public function __construct(private BookingService $bookingService)
+    {
+        // Only authenticated admins and agents:
+        // $this->middleware('auth');
+        // $this->middleware('role:admin|agent');
     }
 
     /**
-     * List bookings (admins) or filter by user.
+     * Display a paginated, filterable, sortable list of bookings.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): Response
     {
-        // If admin: list all, else only their own
-        $user = $request->user();
+        // 1) Gather filter & pagination inputs
+        $filters = $request->only([
+            'status',
+            'date_from',
+            'date_to',
+            'search',
+            'owner_search',
+            'sort_by',
+            'sort_order',
+            'per_page',
+        ]);
+
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $user    = $request->user();
+
+        // 2) Fetch the correct paginator
         if ($user->hasRole('admin')) {
-            // $bookings = $this->bookingService->getUserBookings(null); // implement repo->all() for admin
+            $paginator = $this->bookingService->getFilteredBookings($filters, $perPage);
         } else {
-            $bookings = $this->bookingService->getUserBookings($user->id);
+            $paginator = $this->bookingService->getAgentBookings($user->id, $filters, $perPage);
         }
 
-        return response()->json([
-            'status' => 'success',
-            'data'   => $bookings,
+
+
+        Log::info($paginator->toArray());
+
+        
+
+        // 4) Send to Inertia
+        return Inertia::render('booking/bookings', [
+            'filters'  => $filters,
+            'bookings' => $paginator->toArray(),
         ]);
-    }
-
-    /**
-     * Create new booking.
-     */
-    public function store(StoreBookingRequest $request): JsonResponse
-    {
-        $booking = $this->bookingService->createBooking($request->validated());
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Booking created.',
-            'data'    => $booking,
-        ], 201);
     }
 
     /**
      * Show single booking.
      */
-    public function show(Request $request, int $id): JsonResponse
+    public function show(Request $request, int $id)
     {
         $booking = $this->bookingService->getBooking($id);
-        if ($request->user()) {
-            if (!$booking || $booking->user_id !== $request->user()->id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Booking not found',
-                ], 404);
-            }
 
-            return response()->json([
-                'status' => 'success',
-                'data' => $booking,
+
+       
+
+        return Inertia::render('booking/show', [
+                'booking' => $booking->toArray(),
             ]);
-        }
-
-        $validated = $request->validate([
-            'booking_reference' => 'required|string',
-            'access_token' => 'required|string',
-        ]);
-
-        if (!$booking ||
-            $booking->booking_reference !== $validated['booking_reference'] ||
-            $booking->access_token !== $validated['access_token']
-        ) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized or invalid booking reference',
-            ], 403);
-        }
-
-        if (!$booking ||
-            $booking->booking_reference !== $validated['booking_reference'] ||
-            $booking->access_token !== $validated['access_token'] ||
-            now()->greaterThan($booking->access_token_expires_at)
-        ) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized or expired access token',
-            ], 403);
-        }
-
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $booking,
-        ]);
     }
 
+    /**
+     * Create new booking.
+     */
+    public function store(StoreBookingRequest $request): RedirectResponse
+    {
+        $this->bookingService->createBooking($request->validated());
+
+        return redirect()
+            ->route('bookings.index')
+            ->with('success', 'Booking created successfully.');
+    }
 
     /**
      * Confirm a booking (admin only).
      */
-    public function confirm(int $id): JsonResponse
+    public function confirm(int $id): RedirectResponse
     {
-        // $this->authorize('confirm', Booking::class);
+        $this->bookingService->confirmBooking($id);
 
-        $booking = $this->bookingService->confirmBooking($id);
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Booking confirmed.',
-            'data'    => $booking,
-        ]);
+        return back()->with('success', 'Booking confirmed.');
     }
 
     /**
      * Cancel a booking (user or admin).
      */
-    public function cancel(int $id): JsonResponse
+    public function cancel(Request $request, int $id): RedirectResponse
     {
-        $booking = $this->bookingService->cancelBooking($id);
+        $booking = $this->bookingService->getBooking($id);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Booking cancelled.',
-            'data'    => $booking,
-        ]);
+        if ($request->user()->cannot('cancel', $booking)) {
+            abort(403);
+        }
+
+        $this->bookingService->cancelBooking($id);
+
+        return back()->with('success', 'Booking cancelled.');
     }
 }

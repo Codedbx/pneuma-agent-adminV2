@@ -9,6 +9,7 @@ use App\Models\Package;
 use App\Models\PackageAddon;
 use App\Models\PlatformSetting;
 use App\Repositories\BookingRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -138,11 +139,49 @@ class BookingService
                 throw new \RuntimeException('Booking record could not be created in the database.');
             }
 
-            // event(new BookingCreated($booking));
+            event(new BookingCreated($booking));
 
             return $booking;
         });
     }
+
+
+   
+    // public function getFilteredBookings(array $filters, int $perPage): LengthAwarePaginator
+    // {
+    //     return $this->bookingRepository
+    //                 ->filter($filters)
+    //                 ->paginate($perPage);
+    // }
+
+  
+    // public function getAgentBookings(int $agentId, array $filters, int $perPage): LengthAwarePaginator
+    // {
+    //     return $this->bookingRepository
+    //                 ->filterForAgent($agentId, $filters)
+    //                 ->paginate($perPage);
+    // }
+
+    public function getFilteredBookings(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->bookingRepository
+                    ->filter($filters)
+                    ->paginate($perPage)
+                    ->withQueryString();
+    }
+
+    /**
+     * Paginate only an agent’s own bookings.
+     */
+    public function getAgentBookings(int $agentId, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->bookingRepository
+                    ->filterForAgent($agentId, $filters)
+                    ->paginate($perPage)
+                    ->withQueryString();
+    }
+
+   
 
 
     public function confirmBooking(int $id): Booking

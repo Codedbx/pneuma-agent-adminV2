@@ -1,7 +1,102 @@
-import React, { useMemo } from "react"
-import { TrendingUp } from "lucide-react"
-import { Pie, PieChart as RechartsPieChart, Label } from "recharts"
 
+
+// import React, { useMemo } from 'react';
+// import { Pie, PieChart as RechartsPieChart, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+// import {
+//   Card,
+//   CardContent,
+//   CardDescription,
+//   CardFooter,
+//   CardHeader,
+//   CardTitle,
+// } from '@/components/ui/card';
+// import { TrendingUp } from 'lucide-react';
+
+// //
+// // Props:
+// //   • data: Array<{
+// //       status: string,   // e.g. "completed", "pending", etc.
+// //       count: number     // e.g. 1200
+// //     }>
+// //
+// // We’ll assign a simple color palette. Adjust the colors as you wish.
+// //
+// const STATUS_COLORS = {
+//   completed: 'var(--color-green)',   // e.g. green slice
+//   pending: 'var(--color-yellow)',     // e.g. yellow slice
+//   cancelled: 'var(--color-red)',      // e.g. red slice
+//   // …add more as needed
+//   default: 'var(--color-gray)',
+// };
+
+// export function PieChart({ data }) {
+//   if (!data) {
+//     return null;
+//   }
+
+//   // Compute total count for center text:
+//   const total = useMemo(() => {
+//     return data.reduce((sum, entry) => sum + entry.count, 0);
+//   }, [data]);
+
+//   return (
+//     <Card className="flex flex-col w-full">
+//       <CardHeader className="items-center pb-0">
+//         <CardTitle>Booking Status</CardTitle>
+//         <CardDescription>Distribution (Completed vs. Pending etc.)</CardDescription>
+//       </CardHeader>
+//       <CardContent className="flex-1 pb-0">
+//         <div style={{ width: '100%', height: 240 }}>
+//           <ResponsiveContainer>
+//             <RechartsPieChart>
+//               <Tooltip
+//                 formatter={(value) => value.toLocaleString()}
+//                 labelFormatter={(label) => `Status: ${label}`}
+//               />
+//               <Pie
+//                 data={data}
+//                 dataKey="count"
+//                 nameKey="status"
+//                 innerRadius={60}
+//                 outerRadius={100}
+//                 paddingAngle={3}
+//                 labelLine={false}
+//                 label={({ name, percent }) =>
+//                   `${name} ${(percent * 100).toFixed(0)}%`
+//                 }
+//               >
+//                 {data.map((entry, index) => {
+//                   const color =
+//                     STATUS_COLORS[entry.status] || STATUS_COLORS.default;
+//                   return <Cell key={`cell-${index}`} fill={color} />;
+//                 })}
+//               </Pie>
+//             </RechartsPieChart>
+//           </ResponsiveContainer>
+//         </div>
+//       </CardContent>
+//       <CardFooter className="flex-col gap-2 text-sm">
+//         <div className="flex items-center gap-2 font-medium leading-none">
+//           {/* You can compute a real “trend” server‐side and show it */}
+//           Trending this period <TrendingUp className="h-4 w-4" />
+//         </div>
+//         <div className="leading-none text-muted-foreground">
+//           Showing booking counts by status
+//         </div>
+//       </CardFooter>
+//     </Card>
+//   );
+// }
+
+import React, { useMemo } from 'react';
+import {
+  Pie,
+  PieChart as RechartsPieChart,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  Legend,
+} from 'recharts';
 import {
   Card,
   CardContent,
@@ -9,117 +104,90 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
+} from '@/components/ui/card';
+import { TrendingUp } from 'lucide-react';
 
-const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 287, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 190, fill: "var(--color-other)" },
-]
 
-const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  chrome: {
-    label: "Chrome",
-    color: "hsl(var(--chart-1))",
-  },
-  safari: {
-    label: "Safari",
-    color: "hsl(var(--chart-2))",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "hsl(var(--chart-3))",
-  },
-  edge: {
-    label: "Edge",
-    color: "hsl(var(--chart-4))",
-  },
-  other: {
-    label: "Other",
-    color: "hsl(var(--chart-5))",
-  },
-}
+export function PieChart({ data }) {
+  if (!data) {
+    return null;
+  }
 
-export function PieChart() {
-  const totalVisitors = useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.visitors, 0)
-  }, [])
+  const totalBookings = useMemo(() => {
+    return data.reduce((sum, entry) => sum + entry.count, 0);
+  }, [data]);
+
+  const COLORS = [
+    '#60A5FA', // indigo-400
+    '#34D399', // emerald-400
+    '#FBBF24', // yellow-400
+    '#F87171', // red-400
+    '#A78BFA', // purple-400
+  ];
 
   return (
     <Card className="flex flex-col w-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Donut with Text</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Booking by Location</CardTitle>
+        <CardDescription>All Time Distribution</CardDescription>
       </CardHeader>
+
       <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <RechartsPieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="visitors"
-              nameKey="browser"
-              innerRadius={60}
-              strokeWidth={5}
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-3xl font-bold"
-                        >
-                          {totalVisitors.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
-                        >
-                          Visitors
-                        </tspan>
-                      </text>
-                    )
-                  }
-                  return null
+        <div style={{ width: '100%', height: 280 }}>
+          <ResponsiveContainer>
+            <RechartsPieChart>
+              <Tooltip
+                formatter={(value, name) => {
+                  const percent = ((value / totalBookings) * 100).toFixed(1);
+                  return [`${value} (${percent}%)`, name];
+                }}
+                contentStyle={{
+                  fontSize: 12,
+                  borderRadius: '4px',
+                  borderColor: 'var(--border)',
                 }}
               />
-            </Pie>
-          </RechartsPieChart>
-        </ChartContainer>
+
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="country"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={2}
+                labelLine={false}
+                // label={({ percent, name }) =>
+                //   `${name} ${(percent * 100).toFixed(0)}%`
+                // }
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`slice-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+
+              <Legend
+                layout="vertical"
+                verticalAlign="middle"
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ fontSize: 12 }}
+              />
+            </RechartsPieChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
+
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+          Trending all time <TrendingUp className="h-4 w-4" />
         </div>
         <div className="leading-none text-muted-foreground">
-          Showing total visitors for the last 6 months
+          Showing booking distribution by country
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }

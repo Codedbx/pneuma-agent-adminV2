@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->enum('admin_addon_type', ['fixed', 'percentage']);
             $table->decimal('admin_addon_amount', 10, 2);
+            $table->decimal('espees_rate', 10, 2)->nullable();
+            $table->decimal('naira_rate', 10, 2)->nullable();
             $table->timestamps();
         });
     }
